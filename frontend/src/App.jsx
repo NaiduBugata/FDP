@@ -11,7 +11,7 @@ import vignanLogo from './assets/vignan logo updated.png'
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const SITE_CONTENT_KEY = 'site-content'
 const DEFAULT_REGISTRATION_FIELDS = [
   {
