@@ -71,7 +71,20 @@ const readFileAsDataUrl = (file, onLoad) => {
   reader.readAsDataURL(file)
 }
 
-function AdminPage({ content, onContentChange, onLogout }) {
+const formatRegistrationDate = (value) => {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return date.toLocaleString()
+}
+
+function AdminPage({ content, onContentChange, onLogout, apiBaseUrl }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNavbarEditorOpen, setIsNavbarEditorOpen] = useState(false)
   const [isFormEditorOpen, setIsFormEditorOpen] = useState(false)
@@ -79,7 +92,70 @@ function AdminPage({ content, onContentChange, onLogout }) {
   const [isSpeakersEditorOpen, setIsSpeakersEditorOpen] = useState(false)
   const [isCommitteeEditorOpen, setIsCommitteeEditorOpen] = useState(false)
   const [isSectionsEditorOpen, setIsSectionsEditorOpen] = useState(false)
+  const [isRegistrationsOpen, setIsRegistrationsOpen] = useState(false)
+  const [registrations, setRegistrations] = useState([])
+  const [isRegistrationsLoading, setIsRegistrationsLoading] = useState(false)
+  const [registrationsError, setRegistrationsError] = useState('')
+  const [isExportingRegistrations, setIsExportingRegistrations] = useState(false)
   const [activeFormFieldIndex, setActiveFormFieldIndex] = useState(null)
+
+  const loadRegistrations = async () => {
+    setIsRegistrationsLoading(true)
+    setRegistrationsError('')
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/registrations`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch registration details')
+      }
+
+      const payload = await response.json()
+      setRegistrations(Array.isArray(payload.data) ? payload.data : [])
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to fetch registration details')
+    } finally {
+      setIsRegistrationsLoading(false)
+    }
+  }
+
+  const openRegistrationsPanel = async () => {
+    setIsRegistrationsOpen(true)
+    await loadRegistrations()
+  }
+
+  const closeRegistrationsPanel = () => {
+    setIsRegistrationsOpen(false)
+  }
+
+  const downloadRegistrationsExcel = async () => {
+    setIsExportingRegistrations(true)
+    setRegistrationsError('')
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/registrations/export/excel`)
+      if (!response.ok) {
+        throw new Error('Failed to download registrations file')
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('content-disposition') || ''
+      const match = contentDisposition.match(/filename="?([^\"]+)"?/i)
+      const fileName = match?.[1] || 'registrations.xlsx'
+
+      const fileUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(fileUrl)
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download registrations file')
+    } finally {
+      setIsExportingRegistrations(false)
+    }
+  }
 
   const updateRegistrationTitle = (value) => {
     onContentChange((prev) => ({
@@ -555,10 +631,29 @@ function AdminPage({ content, onContentChange, onLogout }) {
 
       <div className="admin-shell">
         <header className="admin-header">
-          <h1>Admin Control Panel</h1>
+          <h1>Content Control Panel</h1>
           <p>All changes are applied instantly on the main page and saved in browser storage.</p>
           <a href="#" className="admin-back-link">Back to Main Website</a>
         </header>
+
+        <section className="admin-card">
+          <h2>Registration Details</h2>
+          <p className="admin-helper-text">View all registered participants and download the full list in Excel.</p>
+          <div className="admin-row-actions">
+            <button type="button" className="admin-add" onClick={openRegistrationsPanel}>
+              View Registrations
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadRegistrationsExcel}
+              disabled={isExportingRegistrations}
+            >
+              {isExportingRegistrations ? 'Preparing Excel...' : 'Download Excel'}
+            </button>
+          </div>
+          {registrationsError ? <p className="admin-error-text">{registrationsError}</p> : null}
+        </section>
 
         <section className="admin-card">
           <h2>Navbar Control</h2>
@@ -622,6 +717,7 @@ function AdminPage({ content, onContentChange, onLogout }) {
             Edit Website Sections
           </button>
         </section>
+
       </div>
 
       {isNavbarEditorOpen ? (
@@ -1076,6 +1172,68 @@ function AdminPage({ content, onContentChange, onLogout }) {
                 ))}
               </div>
               <button type="button" className="admin-add" onClick={addConvener}>Add Convener Member</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isRegistrationsOpen ? (
+        <div className="admin-modal-overlay" onClick={closeRegistrationsPanel}>
+          <section className="admin-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="admin-modal-header">
+              <h3>Registered Participants</h3>
+              <div className="admin-row-actions">
+                <button type="button" className="admin-muted" onClick={loadRegistrations} disabled={isRegistrationsLoading}>
+                  {isRegistrationsLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+                <button type="button" className="admin-muted" onClick={closeRegistrationsPanel}>
+                  Close
+                </button>
+              </div>
+            </header>
+
+            <div className="admin-modal-editor">
+              {isRegistrationsLoading ? <p className="admin-helper-text">Loading registrations...</p> : null}
+              {!isRegistrationsLoading && registrationsError ? (
+                <p className="admin-error-text">{registrationsError}</p>
+              ) : null}
+              {!isRegistrationsLoading && !registrationsError && registrations.length === 0 ? (
+                <p className="admin-helper-text">No registrations found yet.</p>
+              ) : null}
+              {!isRegistrationsLoading && !registrationsError && registrations.length > 0 ? (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Mobile</th>
+                        <th>Email</th>
+                        <th>Designation</th>
+                        <th>Institution</th>
+                        <th>Participant Type</th>
+                        <th>Mode</th>
+                        <th>Declaration</th>
+                        <th>Submitted At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {registrations.map((item) => (
+                        <tr key={item._id}>
+                          <td>{item.fullName || '-'}</td>
+                          <td>{item.mobileNumber || '-'}</td>
+                          <td>{item.emailId || '-'}</td>
+                          <td>{item.designation || '-'}</td>
+                          <td>{item.institution || '-'}</td>
+                          <td>{item.participantType || '-'}</td>
+                          <td>{item.mode || '-'}</td>
+                          <td>{item.declaration || '-'}</td>
+                          <td>{formatRegistrationDate(item.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
             </div>
           </section>
         </div>

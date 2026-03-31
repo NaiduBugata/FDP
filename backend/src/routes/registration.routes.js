@@ -15,6 +15,7 @@ const validateRequest = (req, res, next) => {
 }
 
 router.get('/', registrationController.getAll)
+	router.get('/export/excel', registrationController.exportExcel)
 router.get('/:id', [param('id').isMongoId().withMessage('Invalid ID')], validateRequest, registrationController.getById)
 router.post(
 	'/',

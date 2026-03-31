@@ -200,11 +200,7 @@
   position: fixed;
   inset: 0 0 auto;
   z-index: 30;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--surface-container-lowest) 96%, transparent),
-    color-mix(in oklab, var(--surface-container-low) 88%, transparent)
-  );
+  background: #ffffff;
   backdrop-filter: blur(9px);
   border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 78%, transparent);
 }
@@ -231,7 +227,7 @@
 }
 
 .navbar-logo {
-  height: 46px;
+  height: 50px;
   width: auto;
   object-fit: contain;
 }
@@ -992,6 +988,7 @@
   background: var(--secondary);
   color: var(--on-secondary);
   font-weight: 700;
+  cursor: pointer;
 }
 
 .timeline-btn .material-symbols-outlined {
@@ -1261,6 +1258,71 @@
   background: var(--surface-container-low);
 }
 
+.registration-submit-btn {
+  min-width: 128px;
+  justify-content: center;
+}
+
+.registration-submit-btn.is-loading {
+  cursor: wait;
+}
+
+.registration-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgb(255 255 255 / 0.55);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: registration-spin 0.8s linear infinite;
+}
+
+@keyframes registration-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.registration-toast-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(7 19 34 / 0.32);
+  backdrop-filter: blur(4px);
+}
+
+.registration-toast-window {
+  width: min(520px, calc(100% - 24px));
+  background: #ffffff;
+  border: 1px solid color-mix(in oklab, var(--outline-variant) 62%, transparent);
+  border-radius: 1rem;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 24px 50px rgb(11 37 59 / 0.28);
+}
+
+.registration-toast-title {
+  margin: 0;
+  color: #0a7a44;
+  font-weight: 700;
+  font-size: 1.2rem;
+  font-family: var(--font-headline);
+}
+
+.registration-toast-message {
+  margin: 0.4rem 0 0.9rem;
+  color: #1d334d;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.registration-toast-btn {
+  min-width: 110px;
+  justify-content: center;
+}
+
 .admin-login-page {
   min-height: 100vh;
   display: grid;
@@ -1321,20 +1383,6 @@
 .admin-login-card p {
   margin: 0.35rem 0 1rem;
   color: var(--on-surface-variant);
-}
-
-.admin-login-credentials {
-  border: 1px dashed color-mix(in oklab, var(--primary) 40%, transparent);
-  border-radius: 0.72rem;
-  background: color-mix(in oklab, var(--primary-fixed) 22%, white);
-  padding: 0.55rem 0.7rem;
-  margin-bottom: 0.8rem;
-}
-
-.admin-login-credentials p {
-  margin: 0.2rem 0;
-  color: var(--on-surface);
-  font-size: 0.9rem;
 }
 
 .admin-login-form {
@@ -1452,7 +1500,7 @@
   }
 
   .navbar-logo {
-    height: 38px;
+    height: 42px;
   }
 
   .navbar-logo-stack {

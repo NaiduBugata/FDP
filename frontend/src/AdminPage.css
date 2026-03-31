@@ -196,6 +196,41 @@
   font-weight: 600;
 }
 
+.admin-error-text {
+  margin: 0.65rem 0 0;
+  color: #b62424;
+  font-weight: 700;
+}
+
+.admin-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #d5e2f0;
+  border-radius: 0.75rem;
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid #e1ebf5;
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.86rem;
+}
+
+.admin-table th {
+  background: #f5f9ff;
+  color: #173651;
+  font-weight: 800;
+}
+
 .admin-modal-overlay {
   position: fixed;
   inset: 0;

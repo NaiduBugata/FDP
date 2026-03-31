@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { jsPDF } from 'jspdf'
 import './App.css'
 import AdminPage from './AdminPage.jsx'
 import bala from './assets/bala.jpg'
@@ -111,7 +112,7 @@ const DEFAULT_NAVBAR_LINKS = [
   { label: 'Objectives', href: '#objectives' },
   { label: 'Committee', href: '#committee' },
   { label: 'Speakers', href: '#speakers' },
-  { label: 'Admin', href: '#admin' },
+  { label: 'Portal', href: '#admin' },
 ]
 
 const DEFAULT_SECTION_CONTENT = {
@@ -252,10 +253,17 @@ const normalizeNavbarLinks = (links) => {
   }
 
   return links
-    .map((item) => ({
-      label: item?.label ?? '',
-      href: item?.href ?? '#',
-    }))
+    .map((item) => {
+      const href = item?.href ?? '#'
+      const rawLabel = item?.label ?? ''
+      const label =
+        href === '#admin' && rawLabel.trim().toLowerCase() === 'admin' ? 'Portal' : rawLabel
+
+      return {
+        label,
+        href,
+      }
+    })
     .filter((item) => item.label.trim())
 }
 
@@ -648,6 +656,7 @@ function App() {
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false)
   const [registrationSubmitMessage, setRegistrationSubmitMessage] = useState('')
   const [registrationSubmitError, setRegistrationSubmitError] = useState('')
+  const [registrationToastMessage, setRegistrationToastMessage] = useState('')
   const saveTimerRef = useRef(null)
 
   useEffect(() => {
@@ -826,6 +835,19 @@ function App() {
     }))
   }
 
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      if (!file) {
+        resolve('')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+      reader.onerror = () => reject(new Error('Failed to read passport photo'))
+      reader.readAsDataURL(file)
+    })
+
   const handleFormSubmit = async (event) => {
     event.preventDefault()
 
@@ -834,6 +856,12 @@ function App() {
     setIsSubmittingRegistration(true)
 
     try {
+      if (formData.passportPhoto && formData.passportPhoto.size > 5 * 1024 * 1024) {
+        throw new Error('Passport photo must be 5MB or smaller.')
+      }
+
+      const passportPhotoData = await fileToDataUrl(formData.passportPhoto)
+
       const payload = {
         fullName: formData.fullName,
         mobileNumber: formData.mobileNumber,
@@ -842,7 +870,7 @@ function App() {
         institution: formData.institution,
         participantType: formData.participantType,
         mode: formData.mode,
-        passportPhoto: formData.passportPhoto?.name || '',
+        passportPhoto: passportPhotoData,
         declaration: formData.declaration,
         signature: formData.signature,
       }
@@ -863,6 +891,7 @@ function App() {
       }
 
       setRegistrationSubmitMessage('Registration submitted successfully and saved to database.')
+      setRegistrationToastMessage('Registration successful')
       setFormData({
         fullName: '',
         mobileNumber: '',
@@ -878,6 +907,9 @@ function App() {
       window.setTimeout(() => {
         setIsRegisterOpen(false)
       }, 700)
+      window.setTimeout(() => {
+        setRegistrationToastMessage('')
+      }, 3000)
     } catch (error) {
       setRegistrationSubmitError(error.message || 'Failed to submit registration')
     } finally {
@@ -939,6 +971,89 @@ function App() {
     }))
   }, [content.registration.formFields])
 
+  const downloadSchedule = () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const datePart = new Date().toISOString().slice(0, 10)
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const marginX = 14
+    const contentWidth = pageWidth - marginX * 2
+    const headerHeight = 28
+    const footerReserve = 14
+
+    const drawPageHeader = () => {
+      doc.setFillColor(8, 90, 112)
+      doc.rect(0, 0, pageWidth, headerHeight, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(16)
+      doc.text('FDP Schedule', marginX, 12)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.text(`Generated on ${new Date().toLocaleDateString()}`, marginX, 19)
+    }
+
+    let y = headerHeight + 10
+    drawPageHeader()
+
+    if (content.schedule.length === 0) {
+      doc.setTextColor(58, 74, 89)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      doc.text('No schedule entries are available right now.', marginX, y)
+    }
+
+    content.schedule.forEach((item, index) => {
+      const titleLines = doc.splitTextToSize(`${index + 1}. ${item.title || 'Schedule Item'}`, contentWidth - 12)
+      const descriptionLines = doc.splitTextToSize(item.text || '', contentWidth - 12)
+      const cardHeight = 8 + titleLines.length * 5 + 3 + descriptionLines.length * 4.8 + 6
+
+      if (y + cardHeight > pageHeight - footerReserve) {
+        doc.addPage()
+        drawPageHeader()
+        y = headerHeight + 10
+      }
+
+      doc.setFillColor(245, 250, 255)
+      doc.setDrawColor(199, 219, 236)
+      doc.roundedRect(marginX, y, contentWidth, cardHeight, 2.5, 2.5, 'FD')
+
+      doc.setFillColor(8, 90, 112)
+      doc.roundedRect(marginX + 2, y + 2, 1.6, cardHeight - 4, 0.8, 0.8, 'F')
+
+      let textY = y + 7
+      doc.setTextColor(21, 52, 79)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11.5)
+      doc.text(titleLines, marginX + 6, textY)
+      textY += titleLines.length * 5 + 1
+
+      doc.setTextColor(66, 85, 102)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.text(descriptionLines, marginX + 6, textY)
+
+      y += cardHeight + 5
+    })
+
+    const totalPages = doc.getNumberOfPages()
+    for (let pageIndex = 1; pageIndex <= totalPages; pageIndex += 1) {
+      doc.setPage(pageIndex)
+      doc.setDrawColor(220, 230, 240)
+      doc.line(marginX, pageHeight - 10, pageWidth - marginX, pageHeight - 10)
+      doc.setTextColor(120, 136, 153)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.text(`Page ${pageIndex} of ${totalPages}`, pageWidth / 2, pageHeight - 5.5, {
+        align: 'center',
+      })
+    }
+
+    doc.save(`seminar-schedule-${datePart}.pdf`)
+  }
+
   const isAdminPage = routeHash === '#admin'
 
   if (isAdminPage) {
@@ -952,16 +1067,8 @@ function App() {
             </div>
           </header>
           <section className="admin-login-card">
-            <h1>Admin Login</h1>
-            <p>Sign in to open the Admin Control Panel.</p>
-            <div className="admin-login-credentials">
-              <p>
-                <strong>User ID:</strong> {ADMIN_USERNAME}
-              </p>
-              <p>
-                <strong>Password:</strong> {ADMIN_PASSWORD}
-              </p>
-            </div>
+            <h1>Portal Login</h1>
+            <p>Sign in to open the content control panel.</p>
             <form className="admin-login-form" onSubmit={handleAdminLoginSubmit}>
               <label>
                 User ID
@@ -993,7 +1100,14 @@ function App() {
       )
     }
 
-    return <AdminPage content={content} onContentChange={setContent} onLogout={handleAdminLogout} />
+    return (
+      <AdminPage
+        content={content}
+        onContentChange={setContent}
+        onLogout={handleAdminLogout}
+        apiBaseUrl={API_BASE_URL}
+      />
+    )
   }
 
   const navbarConfig = content.navbar
@@ -1282,7 +1396,7 @@ function App() {
           <div className="container narrow">
             <div className="timeline-head">
               <h2>{sectionContent.schedule.heading}</h2>
-              <button className="timeline-btn" type="button">
+              <button className="timeline-btn" type="button" onClick={downloadSchedule}>
                 <span className="material-symbols-outlined">download</span>
                 {sectionContent.schedule.buttonText}
               </button>
@@ -1399,13 +1513,40 @@ function App() {
                 <button type="button" className="btn btn-ghost" onClick={closeRegistrationForm}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmittingRegistration}>
-                  {isSubmittingRegistration ? 'Submitting...' : 'Submit'}
+                <button
+                  type="submit"
+                  className={`btn btn-primary registration-submit-btn ${isSubmittingRegistration ? 'is-loading' : ''}`}
+                  disabled={isSubmittingRegistration}
+                >
+                  {isSubmittingRegistration ? (
+                    <>
+                      <span className="registration-spinner" aria-hidden="true"></span>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
                 </button>
               </div>
               {registrationSubmitMessage ? <p>{registrationSubmitMessage}</p> : null}
               {registrationSubmitError ? <p>{registrationSubmitError}</p> : null}
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {registrationToastMessage ? (
+        <div className="registration-toast-overlay" role="status" aria-live="polite">
+          <div className="registration-toast-window">
+            <p className="registration-toast-title">Success</p>
+            <p className="registration-toast-message">{registrationToastMessage}</p>
+            <button
+              type="button"
+              className="btn btn-primary registration-toast-btn"
+              onClick={() => setRegistrationToastMessage('')}
+            >
+              OK
+            </button>
           </div>
         </div>
       ) : null}

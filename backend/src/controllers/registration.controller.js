@@ -1,5 +1,19 @@
 const { validationResult } = require('express-validator')
+const ExcelJS = require('exceljs')
 const registrationService = require('../services/registration.service')
+
+const getImagePayloadFromDataUrl = (dataUrl = '') => {
+	const match = dataUrl.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/i)
+	if (!match) {
+		return null
+	}
+
+	const extension = match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()
+	return {
+		extension,
+		base64: match[2],
+	}
+}
 
 const getAll = async (req, res, next) => {
 	try {
@@ -56,10 +70,92 @@ const removeById = async (req, res, next) => {
 	}
 }
 
+const exportExcel = async (req, res, next) => {
+	try {
+		const registrations = await registrationService.getAll()
+		const workbook = new ExcelJS.Workbook()
+		const worksheet = workbook.addWorksheet('Registrations')
+
+		worksheet.columns = [
+			{ header: 'Name', key: 'fullName', width: 24 },
+			{ header: 'Mobile', key: 'mobileNumber', width: 18 },
+			{ header: 'Email', key: 'emailId', width: 28 },
+			{ header: 'Designation', key: 'designation', width: 24 },
+			{ header: 'Institution', key: 'institution', width: 30 },
+			{ header: 'Participant Type', key: 'participantType', width: 20 },
+			{ header: 'Mode', key: 'mode', width: 12 },
+			{ header: 'Declaration', key: 'declaration', width: 14 },
+			{ header: 'Signature', key: 'signature', width: 20 },
+			{ header: 'Submitted At', key: 'submittedAt', width: 24 },
+			{ header: 'Photo', key: 'photo', width: 18 },
+			{ header: 'Photo Source', key: 'photoSource', width: 34 },
+		]
+
+		const headerRow = worksheet.getRow(1)
+		headerRow.font = { bold: true }
+		headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+		headerRow.height = 24
+
+		registrations.forEach((item) => {
+			const row = worksheet.addRow({
+				fullName: item.fullName || '',
+				mobileNumber: item.mobileNumber || '',
+				emailId: item.emailId || '',
+				designation: item.designation || '',
+				institution: item.institution || '',
+				participantType: item.participantType || '',
+				mode: item.mode || '',
+				declaration: item.declaration || '',
+				signature: item.signature || '',
+				submittedAt: item.createdAt ? new Date(item.createdAt).toISOString() : '',
+				photo: '',
+				photoSource:
+					typeof item.passportPhoto === 'string' && item.passportPhoto.startsWith('data:image/')
+						? 'Embedded image'
+						: item.passportPhoto || '',
+			})
+
+			row.alignment = { vertical: 'middle', wrapText: true }
+
+			const imagePayload = getImagePayloadFromDataUrl(item.passportPhoto)
+			if (!imagePayload) {
+				return
+			}
+
+			row.height = 72
+			const imageId = workbook.addImage({
+				base64: imagePayload.base64,
+				extension: imagePayload.extension,
+			})
+
+			// Column K (index 10) is the photo column.
+			worksheet.addImage(imageId, {
+				tl: { col: 10 + 0.1, row: row.number - 1 + 0.15 },
+				ext: { width: 62, height: 62 },
+			})
+		})
+
+		const fileBuffer = await workbook.xlsx.writeBuffer()
+
+		const datePart = new Date().toISOString().slice(0, 10)
+		const fileName = `registrations-${datePart}.xlsx`
+
+		res.setHeader(
+			'Content-Type',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		)
+		res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+		return res.status(200).send(fileBuffer)
+	} catch (error) {
+		return next(error)
+	}
+}
+
 module.exports = {
 	getAll,
 	getById,
 	create,
 	updateById,
 	removeById,
+	exportExcel,
 }
