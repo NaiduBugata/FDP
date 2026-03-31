@@ -42,6 +42,13 @@ http://localhost:5000/api
 - POST /api/auth/login
 - GET /api/auth/me (Bearer token required)
 
+## Registration Data Protection
+
+- GET /api/registrations (Bearer token + admin role required)
+- GET /api/registrations/:id (Bearer token + admin role required)
+- GET /api/registrations/export/excel (Bearer token + admin role required)
+- POST /api/registrations (public, for participant registration form)
+
 ## CRUD Endpoints
 
 - Committees: /api/committees
@@ -58,6 +65,18 @@ Each module supports:
 - POST /
 - PUT /:id
 - DELETE /:id
+
+## Load Balancer (Nginx + PM2 Cluster)
+
+1. Start clustered backend instances:
+
+	`pm2 start ecosystem.config.cjs`
+
+2. Use Nginx config file:
+
+	`deploy/nginx-load-balancer.conf`
+
+This routes `/api` traffic to backend instances on ports 5000 and 5001.
 
 ## Frontend Integration Example (Axios)
 

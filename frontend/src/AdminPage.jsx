@@ -84,7 +84,7 @@ const formatRegistrationDate = (value) => {
   return date.toLocaleString()
 }
 
-function AdminPage({ content, onContentChange, onLogout, apiBaseUrl }) {
+function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNavbarEditorOpen, setIsNavbarEditorOpen] = useState(false)
   const [isFormEditorOpen, setIsFormEditorOpen] = useState(false)
@@ -104,7 +104,15 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl }) {
     setRegistrationsError('')
 
     try {
-      const response = await fetch(`${apiBaseUrl}/registrations`)
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch registration details')
       }
@@ -132,14 +140,22 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl }) {
     setRegistrationsError('')
 
     try {
-      const response = await fetch(`${apiBaseUrl}/registrations/export/excel`)
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/excel`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
       if (!response.ok) {
         throw new Error('Failed to download registrations file')
       }
 
       const blob = await response.blob()
       const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^\"]+)"?/i)
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
       const fileName = match?.[1] || 'registrations.xlsx'
 
       const fileUrl = window.URL.createObjectURL(blob)

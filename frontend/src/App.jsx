@@ -10,8 +10,9 @@ import kumar from './assets/kumar.png'
 import vignanLogo from './assets/vignan logo updated.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
-const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = 'admin@123'
+const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
+const ADMIN_USERNAME = 'sunilbabu@gmail.com'
+const ADMIN_PASSWORD = 'Sunil@M26'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
 const SITE_CONTENT_KEY = 'site-content'
@@ -636,6 +637,9 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
     () => window.localStorage.getItem(ADMIN_AUTH_STORAGE_KEY) === 'true',
   )
+  const [adminToken, setAdminToken] = useState(
+    () => window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || '',
+  )
   const [adminLoginForm, setAdminLoginForm] = useState({ username: '', password: '' })
   const [adminLoginError, setAdminLoginError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -673,6 +677,15 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, isAdminAuthenticated ? 'true' : 'false')
   }, [isAdminAuthenticated])
+
+  useEffect(() => {
+    if (adminToken) {
+      window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, adminToken)
+      return
+    }
+
+    window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY)
+  }, [adminToken])
 
   useEffect(() => {
     let isMounted = true
@@ -856,8 +869,8 @@ function App() {
     setIsSubmittingRegistration(true)
 
     try {
-      if (formData.passportPhoto && formData.passportPhoto.size > 5 * 1024 * 1024) {
-        throw new Error('Passport photo must be 5MB or smaller.')
+      if (formData.passportPhoto && formData.passportPhoto.size > 3 * 1024 * 1024) {
+        throw new Error('Passport photo must be 3MB or smaller.')
       }
 
       const passportPhotoData = await fileToDataUrl(formData.passportPhoto)
@@ -922,17 +935,43 @@ function App() {
     setAdminLoginForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAdminLoginSubmit = (event) => {
+  const handleAdminLoginSubmit = async (event) => {
     event.preventDefault()
 
-    if (
-      adminLoginForm.username.trim() === ADMIN_USERNAME &&
-      adminLoginForm.password === ADMIN_PASSWORD
-    ) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: adminLoginForm.username.trim(),
+          password: adminLoginForm.password,
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok || !payload?.data?.token) {
+        throw new Error(payload?.message || 'Invalid username or password.')
+      }
+
+      setAdminToken(payload.data.token)
       setIsAdminAuthenticated(true)
       setAdminLoginError('')
       setAdminLoginForm({ username: '', password: '' })
       return
+    } catch {
+      // Backward compatibility for local-only login mode.
+      if (
+        adminLoginForm.username.trim() === ADMIN_USERNAME &&
+        adminLoginForm.password === ADMIN_PASSWORD
+      ) {
+        setAdminToken('')
+        setIsAdminAuthenticated(true)
+        setAdminLoginError('')
+        setAdminLoginForm({ username: '', password: '' })
+        return
+      }
     }
 
     setAdminLoginError('Invalid username or password.')
@@ -940,6 +979,7 @@ function App() {
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false)
+    setAdminToken('')
     setAdminLoginForm({ username: '', password: '' })
     setAdminLoginError('')
     window.location.hash = ''
@@ -1054,6 +1094,28 @@ function App() {
     doc.save(`seminar-schedule-${datePart}.pdf`)
   }
 
+  if (!isContentBootstrapped) {
+    return (
+      <main className="app-loader" aria-live="polite" aria-busy="true">
+        <span className="app-loader-glow app-loader-glow-a" aria-hidden="true"></span>
+        <span className="app-loader-glow app-loader-glow-b" aria-hidden="true"></span>
+        <span className="app-loader-grid" aria-hidden="true"></span>
+        <div className="app-loader-card">
+          <p className="app-loader-kicker">Vignan CSE Presents</p>
+          <img src={vignanLogo} alt="Vignan logo" className="app-loader-logo" />
+          <p className="app-loader-title">QuBioDL 2K26</p>
+          <p className="app-loader-subtitle">Loading conference content...</p>
+          <div className="app-loader-progress" aria-hidden="true">
+            <span className="app-loader-spinner"></span>
+            <span className="app-loader-bar">
+              <span></span>
+            </span>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   const isAdminPage = routeHash === '#admin'
 
   if (isAdminPage) {
@@ -1106,6 +1168,7 @@ function App() {
         onContentChange={setContent}
         onLogout={handleAdminLogout}
         apiBaseUrl={API_BASE_URL}
+        adminToken={adminToken}
       />
     )
   }
