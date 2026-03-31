@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { jsPDF } from 'jspdf'
 import './App.css'
 import AdminPage from './AdminPage.jsx'
 import bala from './assets/bala.jpg'
@@ -11,8 +10,6 @@ import vignanLogo from './assets/vignan logo updated.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const ADMIN_USERNAME = 'sunilbabu@gmail.com'
-const ADMIN_PASSWORD = 'Sunil@M26'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
 const SITE_CONTENT_KEY = 'site-content'
@@ -961,17 +958,7 @@ function App() {
       setAdminLoginForm({ username: '', password: '' })
       return
     } catch {
-      // Backward compatibility for local-only login mode.
-      if (
-        adminLoginForm.username.trim() === ADMIN_USERNAME &&
-        adminLoginForm.password === ADMIN_PASSWORD
-      ) {
-        setAdminToken('')
-        setIsAdminAuthenticated(true)
-        setAdminLoginError('')
-        setAdminLoginForm({ username: '', password: '' })
-        return
-      }
+      // Login is intentionally backend-only for production readiness.
     }
 
     setAdminLoginError('Invalid username or password.')
@@ -1011,7 +998,8 @@ function App() {
     }))
   }, [content.registration.formFields])
 
-  const downloadSchedule = () => {
+  const downloadSchedule = async () => {
+    const { jsPDF } = await import('jspdf')
     const doc = new jsPDF({ unit: 'mm', format: 'a4' })
     const datePart = new Date().toISOString().slice(0, 10)
     const pageWidth = doc.internal.pageSize.getWidth()

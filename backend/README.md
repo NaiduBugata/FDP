@@ -21,6 +21,13 @@ Create/update .env in backend root:
 - PORT=5000
 - JWT_SECRET=<strong_secret>
 - JWT_EXPIRES_IN=1d
+- CORS_ORIGINS=http://localhost:5173,http://localhost:4173
+- RATE_LIMIT_MAX=600
+
+Notes:
+
+- `JWT_SECRET` must be at least 32 characters and must not be the placeholder value.
+- If `CORS_ORIGINS` is empty, all origins are allowed. Set it in deployment.
 
 ## Run
 
