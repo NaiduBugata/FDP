@@ -15,14 +15,22 @@ const { notFoundHandler, errorHandler } = require('./middlewares/error.middlewar
 
 const app = express()
 
+const normalizeOrigin = (value) => String(value || '')
+	.trim()
+	.replace(/\/+$/, '')
+	.toLowerCase()
+
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
 	.split(',')
-	.map((origin) => origin.trim())
+	.map(normalizeOrigin)
 	.filter(Boolean)
 
 const corsOptions = {
 	origin: (origin, callback) => {
-		if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+		const allowAll = allowedOrigins.length === 0 || allowedOrigins.includes('*')
+		const normalizedOrigin = normalizeOrigin(origin)
+
+		if (!origin || allowAll || allowedOrigins.includes(normalizedOrigin)) {
 			return callback(null, true)
 		}
 

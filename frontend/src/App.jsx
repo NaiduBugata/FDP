@@ -11,7 +11,11 @@ import vignanLogo from './assets/vignan logo updated.png'
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
-const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const DEFAULT_API_BASE_URL = import.meta.env.PROD
+	? 'https://fdp-r80r.onrender.com'
+	: 'http://localhost:5000'
+
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
 const API_BASE_URL = (() => {
   const trimmed = String(RAW_API_BASE_URL).trim().replace(/\/+$/, '')
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
