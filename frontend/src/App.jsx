@@ -22,6 +22,28 @@ const API_BASE_URL = (() => {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
 })()
 const SITE_CONTENT_KEY = 'site-content'
+
+const parseJwtPayload = (token = '') => {
+  try {
+    const raw = String(token || '').trim()
+    if (!raw) {
+      return null
+    }
+
+    const parts = raw.split('.')
+    if (parts.length < 2) {
+      return null
+    }
+
+    const payload = parts[1]
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    const json = atob(padded)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
 const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'full-name',
@@ -647,6 +669,9 @@ function App() {
   const [adminToken, setAdminToken] = useState(
     () => window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || '',
   )
+
+  const tokenPayload = useMemo(() => parseJwtPayload(adminToken), [adminToken])
+  const tokenRole = tokenPayload?.role || ''
   const [adminLoginForm, setAdminLoginForm] = useState({ username: '', password: '' })
   const [adminLoginError, setAdminLoginError] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -1161,6 +1186,26 @@ function App() {
       )
     }
 
+    if (tokenRole !== 'superadmin') {
+      return (
+        <main className="admin-login-page">
+          <header className="admin-login-nav">
+            <div className="admin-login-nav-inner">
+              <p className="admin-login-brand">QuBioDL 2K26</p>
+              <a href="#" className="admin-login-home-link">Back to Home</a>
+            </div>
+          </header>
+          <section className="admin-login-card">
+            <h1>Access Restricted</h1>
+            <p>This portal is for Super Admin only.</p>
+            <button type="button" className="btn btn-primary admin-login-btn" onClick={handleAdminLogout}>
+              Logout
+            </button>
+          </section>
+        </main>
+      )
+    }
+
     return (
       <AdminPage
         content={content}
@@ -1211,6 +1256,26 @@ function App() {
                 Login
               </button>
             </form>
+          </section>
+        </main>
+      )
+    }
+
+    if (tokenRole !== 'admin') {
+      return (
+        <main className="admin-login-page">
+          <header className="admin-login-nav">
+            <div className="admin-login-nav-inner">
+              <p className="admin-login-brand">QuBioDL 2K26</p>
+              <a href="#" className="admin-login-home-link">Back to Home</a>
+            </div>
+          </header>
+          <section className="admin-login-card">
+            <h1>Access Restricted</h1>
+            <p>This portal is for Admin only.</p>
+            <button type="button" className="btn btn-primary admin-login-btn" onClick={handleAdminLogout}>
+              Logout
+            </button>
           </section>
         </main>
       )
