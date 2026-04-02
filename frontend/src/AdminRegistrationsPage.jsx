@@ -82,6 +82,10 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   const [internalRows, setInternalRows] = useState([])
   const [externalRows, setExternalRows] = useState([])
 
+  const [isAllVisible, setIsAllVisible] = useState(false)
+  const [isInternalVisible, setIsInternalVisible] = useState(false)
+  const [isExternalVisible, setIsExternalVisible] = useState(false)
+
   const [isLoadingAll, setIsLoadingAll] = useState(false)
   const [isLoadingInternal, setIsLoadingInternal] = useState(false)
   const [isLoadingExternal, setIsLoadingExternal] = useState(false)
@@ -258,11 +262,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   }
 
   useEffect(() => {
-    const load = async () => {
-      await Promise.all(panels.map((panel) => panel.onRefresh()))
-    }
-
-    load()
+    // Keep tables opt-in via View buttons.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminToken, apiBaseUrl])
 
@@ -290,6 +290,19 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
           <section className="admin-card" key={panel.scope}>
             <h2>{panel.title}</h2>
             <div className="admin-row-actions">
+              <button
+                type="button"
+                className="admin-add"
+                onClick={async () => {
+                  if (panel.scope === 'all') setIsAllVisible(true)
+                  if (panel.scope === 'internal') setIsInternalVisible(true)
+                  if (panel.scope === 'external') setIsExternalVisible(true)
+                  await panel.onRefresh()
+                }}
+                disabled={panel.isLoading}
+              >
+                View
+              </button>
               <button type="button" className="admin-add" onClick={panel.onRefresh} disabled={panel.isLoading}>
                 {panel.isLoading ? 'Refreshing...' : 'Refresh'}
               </button>
@@ -299,11 +312,19 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
             </div>
 
             {panel.error ? <p className="admin-error-text">{panel.error}</p> : null}
-            {!panel.isLoading && !panel.error && panel.rows.length === 0 ? (
+            {!panel.isLoading && !panel.error &&
+            ((panel.scope === 'all' && isAllVisible) ||
+              (panel.scope === 'internal' && isInternalVisible) ||
+              (panel.scope === 'external' && isExternalVisible)) &&
+            panel.rows.length === 0 ? (
               <p className="admin-helper-text">No registrations found.</p>
             ) : null}
 
-            {!panel.isLoading && !panel.error && panel.rows.length > 0 ? (
+            {!panel.isLoading && !panel.error &&
+            ((panel.scope === 'all' && isAllVisible) ||
+              (panel.scope === 'internal' && isInternalVisible) ||
+              (panel.scope === 'external' && isExternalVisible)) &&
+            panel.rows.length > 0 ? (
               <div className="admin-table-wrap">
                 <table className="admin-table">
                   <thead>
