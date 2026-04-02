@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import AdminPage from './AdminPage.jsx'
+import AdminRegistrationsPage from './AdminRegistrationsPage.jsx'
 import bala from './assets/bala.jpg'
 import noni from './assets/noni.png'
 import subbu from './assets/subbu.png'
@@ -118,7 +119,7 @@ const DEFAULT_NAVBAR_LINKS = [
   { label: 'Objectives', href: '#objectives' },
   { label: 'Committee', href: '#committee' },
   { label: 'Speakers', href: '#speakers' },
-  { label: 'Portal', href: '#admin' },
+  { label: 'Portal', href: '#superadmin' },
 ]
 
 const DEFAULT_SECTION_CONTENT = {
@@ -260,10 +261,11 @@ const normalizeNavbarLinks = (links) => {
 
   return links
     .map((item) => {
-      const href = item?.href ?? '#'
+      const rawHref = item?.href ?? '#'
+      const href = rawHref === '#admin' ? '#superadmin' : rawHref
       const rawLabel = item?.label ?? ''
       const label =
-        href === '#admin' && rawLabel.trim().toLowerCase() === 'admin' ? 'Portal' : rawLabel
+        rawHref === '#admin' && rawLabel.trim().toLowerCase() === 'admin' ? 'Portal' : rawLabel
 
       return {
         label,
@@ -1112,9 +1114,10 @@ function App() {
     )
   }
 
+  const isSuperAdminPage = routeHash === '#superadmin'
   const isAdminPage = routeHash === '#admin'
 
-  if (isAdminPage) {
+  if (isSuperAdminPage) {
     if (!isAdminAuthenticated) {
       return (
         <main className="admin-login-page">
@@ -1165,6 +1168,59 @@ function App() {
         onLogout={handleAdminLogout}
         apiBaseUrl={API_BASE_URL}
         adminToken={adminToken}
+      />
+    )
+  }
+
+  if (isAdminPage) {
+    if (!isAdminAuthenticated) {
+      return (
+        <main className="admin-login-page">
+          <header className="admin-login-nav">
+            <div className="admin-login-nav-inner">
+              <p className="admin-login-brand">QuBioDL 2K26</p>
+              <a href="#" className="admin-login-home-link">Back to Home</a>
+            </div>
+          </header>
+          <section className="admin-login-card">
+            <h1>Admin Login</h1>
+            <p>Sign in to open the registrations admin panel.</p>
+            <form className="admin-login-form" onSubmit={handleAdminLoginSubmit}>
+              <label>
+                User ID
+                <input
+                  type="text"
+                  name="username"
+                  value={adminLoginForm.username}
+                  onChange={handleAdminLoginChange}
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  name="password"
+                  value={adminLoginForm.password}
+                  onChange={handleAdminLoginChange}
+                  required
+                />
+              </label>
+              {adminLoginError ? <p className="admin-login-error">{adminLoginError}</p> : null}
+              <button type="submit" className="btn btn-primary admin-login-btn">
+                Login
+              </button>
+            </form>
+          </section>
+        </main>
+      )
+    }
+
+    return (
+      <AdminRegistrationsPage
+        apiBaseUrl={API_BASE_URL}
+        adminToken={adminToken}
+        onLogout={handleAdminLogout}
       />
     )
   }

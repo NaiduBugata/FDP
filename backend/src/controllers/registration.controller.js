@@ -15,9 +15,41 @@ const getImagePayloadFromDataUrl = (dataUrl = '') => {
 	}
 }
 
+const normalizeScope = (value = '') => {
+	const scope = String(value || '')
+		.trim()
+		.toLowerCase()
+	if (!scope || scope === 'all') {
+		return 'all'
+	}
+	if (scope === 'internal' || scope === 'external') {
+		return scope
+	}
+	return 'all'
+}
+
+const applyScopeFilter = (items = [], scope = 'all') => {
+	if (!Array.isArray(items) || items.length === 0) {
+		return []
+	}
+
+	if (scope === 'all') {
+		return items
+	}
+
+	return items.filter((item) => {
+		const participantType = String(item?.participantType || '').toLowerCase()
+		if (scope === 'internal') {
+			return participantType.includes('internal')
+		}
+		return participantType.includes('external')
+	})
+}
+
 const getAll = async (req, res, next) => {
 	try {
-		const data = await registrationService.getAll()
+		const scope = normalizeScope(req.query.scope)
+		const data = applyScopeFilter(await registrationService.getAll(), scope)
 		return res.status(200).json({ message: 'Registrations fetched successfully', data })
 	} catch (error) {
 		return next(error)
@@ -72,7 +104,8 @@ const removeById = async (req, res, next) => {
 
 const exportExcel = async (req, res, next) => {
 	try {
-		const registrations = await registrationService.getAll()
+		const scope = normalizeScope(req.query.scope)
+		const registrations = applyScopeFilter(await registrationService.getAll(), scope)
 		const workbook = new ExcelJS.Workbook()
 		const worksheet = workbook.addWorksheet('Registrations')
 
@@ -138,7 +171,8 @@ const exportExcel = async (req, res, next) => {
 		const fileBuffer = await workbook.xlsx.writeBuffer()
 
 		const datePart = new Date().toISOString().slice(0, 10)
-		const fileName = `registrations-${datePart}.xlsx`
+		const scopePart = scope === 'all' ? 'all' : scope
+		const fileName = `registrations-${scopePart}-${datePart}.xlsx`
 
 		res.setHeader(
 			'Content-Type',

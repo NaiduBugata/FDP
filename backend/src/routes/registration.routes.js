@@ -68,6 +68,7 @@ router.put(
 	'/:id',
 	[
 		authMiddleware,
+		adminMiddleware,
 		param('id').isMongoId().withMessage('Invalid ID'),
 		body('emailId').optional().isEmail().withMessage('Valid email is required'),
 		body('mode').optional().isIn(['Online', 'Offline']).withMessage('Mode must be Online or Offline'),
@@ -78,7 +79,7 @@ router.put(
 )
 router.delete(
 	'/:id',
-	[authMiddleware, param('id').isMongoId().withMessage('Invalid ID')],
+	[authMiddleware, adminMiddleware, param('id').isMongoId().withMessage('Invalid ID')],
 	validateRequest,
 	registrationController.removeById,
 )
