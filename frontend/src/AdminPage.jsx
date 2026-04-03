@@ -173,6 +173,16 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     }
   }
 
+  const updateLoaderField = (key, value) => {
+    onContentChange((prev) => ({
+      ...prev,
+      loader: {
+        ...(prev.loader ?? {}),
+        [key]: value,
+      },
+    }))
+  }
+
   const updateRegistrationTitle = (value) => {
     onContentChange((prev) => ({
       ...prev,
@@ -677,6 +687,38 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
           <button type="button" className="admin-add" onClick={openNavbarEditor}>
             Edit Navbar
           </button>
+        </section>
+
+        <section className="admin-card">
+          <h2>Loading Screen</h2>
+          <p className="admin-helper-text">Update the text shown while the website content is loading.</p>
+          <div className="admin-grid">
+            <label>
+              Kicker Text
+              <input
+                type="text"
+                value={content.loader?.kicker ?? ''}
+                onChange={(event) => updateLoaderField('kicker', event.target.value)}
+              />
+            </label>
+            <label>
+              Title
+              <input
+                type="text"
+                value={content.loader?.title ?? ''}
+                onChange={(event) => updateLoaderField('title', event.target.value)}
+              />
+            </label>
+            <label>
+              Subtitle
+              <input
+                type="text"
+                value={content.loader?.subtitle ?? ''}
+                onChange={(event) => updateLoaderField('subtitle', event.target.value)}
+              />
+            </label>
+          </div>
+          <p className="admin-helper-text">Logo shown here uses the first navbar logo.</p>
         </section>
 
         <section className="admin-card">

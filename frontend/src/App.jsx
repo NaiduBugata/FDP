@@ -480,6 +480,11 @@ const normalizeConveners = (conveners) => {
 }
 
 const defaultContent = {
+  loader: {
+    kicker: 'Vignan CSE Presents',
+    title: 'QuBioDL 2K26',
+    subtitle: 'Loading conference content...',
+  },
   navbar: {
     brand: 'QuBioDL',
     subBrand: '2K26',
@@ -618,6 +623,10 @@ const buildContentFromSaved = (saved = {}) => {
     return {
       ...defaultContent,
       ...saved,
+      loader: {
+        ...defaultContent.loader,
+        ...(saved.loader ?? {}),
+      },
       registration: {
         ...defaultContent.registration,
         ...(saved.registration ?? {}),
@@ -1118,16 +1127,17 @@ function App() {
   }
 
   if (!isContentBootstrapped) {
+    const loaderLogo = content.navbar?.logos?.[0] || vignanLogo
     return (
       <main className="app-loader" aria-live="polite" aria-busy="true">
         <span className="app-loader-glow app-loader-glow-a" aria-hidden="true"></span>
         <span className="app-loader-glow app-loader-glow-b" aria-hidden="true"></span>
         <span className="app-loader-grid" aria-hidden="true"></span>
         <div className="app-loader-card">
-          <p className="app-loader-kicker">Vignan CSE Presents</p>
-          <img src={vignanLogo} alt="Vignan logo" className="app-loader-logo" />
-          <p className="app-loader-title">QuBioDL 2K26</p>
-          <p className="app-loader-subtitle">Loading conference content...</p>
+          <p className="app-loader-kicker">{content.loader?.kicker ?? defaultContent.loader.kicker}</p>
+          <img src={loaderLogo} alt="Vignan logo" className="app-loader-logo" />
+          <p className="app-loader-title">{content.loader?.title ?? defaultContent.loader.title}</p>
+          <p className="app-loader-subtitle">{content.loader?.subtitle ?? defaultContent.loader.subtitle}</p>
           <div className="app-loader-progress" aria-hidden="true">
             <span className="app-loader-spinner"></span>
             <span className="app-loader-bar">
