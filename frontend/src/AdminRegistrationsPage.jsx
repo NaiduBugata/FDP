@@ -121,6 +121,40 @@ const downloadExternalParticipantsExcel = async ({ apiBaseUrl, adminToken, onErr
   }
 }
 
+const downloadCombinedParticipantsExcel = async ({ apiBaseUrl, adminToken, onError }) => {
+  try {
+    if (!adminToken) {
+      throw new Error('Admin API token missing. Login with backend admin credentials.')
+    }
+
+    const response = await fetch(`${apiBaseUrl}/participants/combined/export/excel`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to download participants file')
+    }
+
+    const blob = await response.blob()
+    const contentDisposition = response.headers.get('content-disposition') || ''
+    const match = contentDisposition.match(/filename="?([^"]+)"?/i)
+    const fileName = match?.[1] || 'participants-combined.xlsx'
+
+    const fileUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = fileUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(fileUrl)
+  } catch (error) {
+    onError?.(error?.message || 'Failed to download participants file')
+  }
+}
+
 const fetchRegistrations = async ({ apiBaseUrl, adminToken, scope }) => {
   if (!adminToken) {
     throw new Error('Admin API token missing. Login with backend admin credentials.')
@@ -183,10 +217,32 @@ const fetchExternalParticipants = async ({ apiBaseUrl, adminToken }) => {
   return Array.isArray(payload.data) ? payload.data : []
 }
 
+const fetchCombinedParticipants = async ({ apiBaseUrl, adminToken }) => {
+  if (!adminToken) {
+    throw new Error('Admin API token missing. Login with backend admin credentials.')
+  }
+
+  const response = await fetch(`${apiBaseUrl}/participants/combined`, {
+    headers: {
+      Authorization: `Bearer ${adminToken}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch participants details')
+  }
+
+  const payload = await response.json()
+  return Array.isArray(payload.data) ? payload.data : []
+}
+
 function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   const [allRows, setAllRows] = useState([])
+  const [combinedRows, setCombinedRows] = useState([])
   const [internalRows, setInternalRows] = useState([])
   const [externalRows, setExternalRows] = useState([])
+
+  const [allMode, setAllMode] = useState('live')
 
   const [isAllVisible, setIsAllVisible] = useState(false)
   const [isInternalVisible, setIsInternalVisible] = useState(false)
@@ -214,7 +270,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
       {
         scope: 'all',
         title: 'Registration Data (Complete)',
-        rows: allRows,
+        rows: allMode === 'combined' ? combinedRows : allRows,
         isLoading: isLoadingAll,
         error: errorAll,
         isExporting: isExportingAll,
@@ -222,8 +278,13 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
           setIsLoadingAll(true)
           setErrorAll('')
           try {
-            const data = await fetchRegistrations({ apiBaseUrl, adminToken, scope: 'all' })
-            setAllRows(data)
+            if (allMode === 'combined') {
+              const data = await fetchCombinedParticipants({ apiBaseUrl, adminToken })
+              setCombinedRows(data)
+            } else {
+              const data = await fetchRegistrations({ apiBaseUrl, adminToken, scope: 'all' })
+              setAllRows(data)
+            }
           } catch (error) {
             setErrorAll(error?.message || 'Failed to fetch registration details')
           } finally {
@@ -233,7 +294,11 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
         onDownload: async () => {
           setIsExportingAll(true)
           setErrorAll('')
-          await downloadExcel({ apiBaseUrl, adminToken, scope: 'all', onError: setErrorAll })
+          if (allMode === 'combined') {
+            await downloadCombinedParticipantsExcel({ apiBaseUrl, adminToken, onError: setErrorAll })
+          } else {
+            await downloadExcel({ apiBaseUrl, adminToken, scope: 'all', onError: setErrorAll })
+          }
           setIsExportingAll(false)
         },
       },
@@ -292,8 +357,10 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
     ],
     [
       adminToken,
+      allMode,
       apiBaseUrl,
       allRows,
+      combinedRows,
       errorAll,
       errorExternal,
       errorInternal,
@@ -396,6 +463,26 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
           <section className="admin-card" key={panel.scope}>
             <h2>{panel.title}</h2>
             <div className="admin-row-actions">
+              {panel.scope === 'all' ? (
+                <>
+                  <button
+                    type="button"
+                    className="admin-muted"
+                    onClick={() => setAllMode('live')}
+                    disabled={panel.isLoading || allMode === 'live'}
+                  >
+                    Live
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-muted"
+                    onClick={() => setAllMode('combined')}
+                    disabled={panel.isLoading || allMode === 'combined'}
+                  >
+                    Combined
+                  </button>
+                </>
+              ) : null}
               <button
                 type="button"
                 className="admin-add"
