@@ -1346,25 +1346,12 @@ function App() {
         <section className="hero-section">
           <div className="hero-rings" aria-hidden="true"></div>
           <div className="container hero-content">
-            <p className="pill">{sectionContent.hero.pill}</p>
+            <p className="hero-brand">{navbarConfig.brand}</p>
+            <p className="hero-eyebrow">{sectionContent.hero.pill}</p>
             <h1>
               {sectionContent.hero.titlePrefix} <span>{sectionContent.hero.titleHighlight}</span>
             </h1>
             <p className="hero-subtitle">{sectionContent.hero.subtitle}</p>
-            <div className="hero-meta">
-              <span>
-                <i aria-hidden="true">◷</i>
-                {sectionContent.hero.metaDate}
-              </span>
-              <span>
-                <i aria-hidden="true">✣</i>
-                {sectionContent.hero.metaMode}
-              </span>
-              <span>
-                <i aria-hidden="true">◉</i>
-                {sectionContent.hero.metaSeats}
-              </span>
-            </div>
             <div className="hero-actions">
               <button type="button" className="btn btn-primary" onClick={openRegistrationForm}>
                 {sectionContent.hero.registerButtonText}
@@ -1373,8 +1360,16 @@ function App() {
                 {sectionContent.hero.scheduleButtonText}
               </a>
             </div>
-            <p className="days-left">
-              {daysLeft} {sectionContent.hero.daysLeftSuffix}
+            <p className="hero-meta-line">
+              <span>{sectionContent.hero.metaDate}</span>
+              <span className="hero-meta-dot" aria-hidden="true" />
+              <span>{sectionContent.hero.metaMode}</span>
+              <span className="hero-meta-dot" aria-hidden="true" />
+              <span>{sectionContent.hero.metaSeats}</span>
+              <span className="hero-meta-dot" aria-hidden="true" />
+              <span>
+                {daysLeft} {sectionContent.hero.daysLeftSuffix}
+              </span>
             </p>
           </div>
         </section>

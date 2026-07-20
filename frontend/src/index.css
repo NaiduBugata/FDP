@@ -1,53 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Sans:wght@500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 :root {
-  --on-secondary-fixed: #001d34;
-  --on-primary-fixed-variant: #004f4f;
-  --primary-fixed-dim: #76d6d5;
-  --secondary-fixed: #d0e4ff;
-  --inverse-primary: #76d6d5;
-  --on-secondary-container: #003e67;
-  --on-secondary: #ffffff;
-  --surface-dim: #d2d9f4;
-  --surface-container-lowest: #ffffff;
-  --tertiary-fixed: #d4e6e5;
-  --on-surface-variant: #3e4949;
-  --on-secondary-fixed-variant: #004a7a;
-  --tertiary-container: #657675;
-  --surface-container-high: #e2e7ff;
-  --secondary-fixed-dim: #9bcbff;
-  --on-tertiary: #ffffff;
-  --surface-tint: #006a6a;
-  --tertiary-fixed-dim: #b8cac9;
-  --on-tertiary-container: #ebfdfc;
-  --primary: #006565;
-  --surface-bright: #faf8ff;
+  /* Teal + slate academic palette */
+  --primary: #0b6b6b;
+  --primary-container: #0f8585;
+  --primary-fixed: #9de8e7;
+  --primary-fixed-dim: #6fcfce;
   --on-primary: #ffffff;
-  --outline: #6e7979;
-  --on-background: #131b2e;
-  --outline-variant: #bdc9c8;
-  --surface: #faf8ff;
-  --surface-container-highest: #dae2fd;
-  --inverse-surface: #283044;
-  --surface-variant: #dae2fd;
-  --on-surface: #131b2e;
-  --secondary: #00629f;
-  --tertiary: #4d5d5d;
-  --surface-container: #eaedff;
-  --surface-container-low: #f2f3ff;
-  --inverse-on-surface: #eef0ff;
-  --on-tertiary-fixed-variant: #3a4a49;
-  --on-primary-container: #e3fffe;
-  --secondary-container: #4eabfd;
-  --primary-container: #008080;
-  --primary-fixed: #93f2f2;
-  --background: #faf8ff;
   --on-primary-fixed: #002020;
-  --on-tertiary-fixed: #0e1e1e;
+  --on-primary-fixed-variant: #004f4f;
+  --on-primary-container: #e8fffe;
+  --inverse-primary: #6fcfce;
+  --surface-tint: #0b6b6b;
 
-  --font-headline: 'Plus Jakarta Sans', sans-serif;
-  --font-body: 'Manrope', sans-serif;
+  --secondary: #1a5f8a;
+  --secondary-container: #d4e8f7;
+  --secondary-fixed: #d4e8f7;
+  --secondary-fixed-dim: #8ebfe0;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #0c3d5c;
+  --on-secondary-fixed: #06253a;
+  --on-secondary-fixed-variant: #1a4d6e;
+
+  --tertiary: #4a5a5a;
+  --tertiary-container: #6a7a79;
+  --tertiary-fixed: #d6e4e3;
+  --tertiary-fixed-dim: #b4c4c3;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #f0fafa;
+  --on-tertiary-fixed: #101e1e;
+  --on-tertiary-fixed-variant: #3a4a49;
+
+  --background: #f5f7f8;
+  --on-background: #152028;
+  --surface: #f5f7f8;
+  --surface-bright: #fbfcfd;
+  --surface-dim: #d8dee3;
+  --surface-variant: #e4eaee;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eef2f4;
+  --surface-container: #e8eef1;
+  --surface-container-high: #e0e7eb;
+  --surface-container-highest: #d6dfe5;
+  --on-surface: #152028;
+  --on-surface-variant: #4a5963;
+  --inverse-surface: #243038;
+  --inverse-on-surface: #eef3f6;
+
+  --outline: #6b7a84;
+  --outline-variant: #c5d0d7;
+
+  --font-headline: 'Instrument Sans', 'Segoe UI', sans-serif;
+  --font-body: 'DM Sans', 'Segoe UI', sans-serif;
+
+  --radius-sm: 0.4rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --shadow-sm: 0 1px 2px rgb(21 32 40 / 0.05);
+  --shadow-md: 0 8px 24px rgb(21 32 40 / 0.07);
+  --shadow-lg: 0 18px 40px rgb(21 32 40 / 0.12);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -56,28 +70,59 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 120%;
-  scrollbar-width: none;
-}
-
-/* Hide scrollbar but keep scrolling enabled */
-*::-webkit-scrollbar {
-  display: none;
+  font-size: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--outline) 45%, transparent) transparent;
 }
 
 body {
   margin: 0;
   font-family: var(--font-body);
-  background: var(--background);
+  background-color: #e8f0f2;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 95% -5%, rgb(11 107 107 / 0.18), transparent 58%),
+    radial-gradient(ellipse 70% 50% at -5% 35%, rgb(26 95 138 / 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 80% 85%, rgb(15 133 133 / 0.1), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 20% 95%, rgb(74 120 150 / 0.08), transparent 48%),
+    linear-gradient(165deg, #eef6f7 0%, #e4eef2 42%, #e8f2f4 100%);
+  background-attachment: fixed;
   color: var(--on-surface);
-  -ms-overflow-style: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+}
+
+#root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  background-image:
+    linear-gradient(rgb(11 107 107 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(11 107 107 / 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 20%, transparent 78%);
+}
+
+#root > * {
+  position: relative;
+  z-index: 1;
 }
 
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
   line-height: 1;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 28%, white);
+  color: var(--on-surface);
 }
