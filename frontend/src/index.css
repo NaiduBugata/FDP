@@ -112,11 +112,6 @@ body {
   mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 20%, transparent 78%);
 }
 
-#root > * {
-  position: relative;
-  z-index: 1;
-}
-
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
   line-height: 1;

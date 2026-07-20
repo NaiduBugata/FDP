@@ -1026,8 +1026,11 @@ function App() {
   const registrationSections = useMemo(() => {
     const grouped = {}
     const order = []
+    const formFields = Array.isArray(content.registration?.formFields)
+      ? content.registration.formFields
+      : []
 
-    for (const field of content.registration.formFields) {
+    for (const field of formFields) {
       const sectionName = field.section || 'Additional Details'
       if (!grouped[sectionName]) {
         grouped[sectionName] = []
@@ -1040,7 +1043,7 @@ function App() {
       title: sectionName,
       fields: grouped[sectionName],
     }))
-  }, [content.registration.formFields])
+  }, [content.registration?.formFields])
 
   const downloadSchedule = async () => {
     const { jsPDF } = await import('jspdf')
@@ -1124,29 +1127,6 @@ function App() {
     }
 
     doc.save(`seminar-schedule-${datePart}.pdf`)
-  }
-
-  if (!isContentBootstrapped) {
-    const loaderLogo = content.navbar?.logos?.[0] || vignanLogo
-    return (
-      <main className="app-loader" aria-live="polite" aria-busy="true">
-        <span className="app-loader-glow app-loader-glow-a" aria-hidden="true"></span>
-        <span className="app-loader-glow app-loader-glow-b" aria-hidden="true"></span>
-        <span className="app-loader-grid" aria-hidden="true"></span>
-        <div className="app-loader-card">
-          <p className="app-loader-kicker">{content.loader?.kicker ?? defaultContent.loader.kicker}</p>
-          <img src={loaderLogo} alt="Vignan logo" className="app-loader-logo" />
-          <p className="app-loader-title">{content.loader?.title ?? defaultContent.loader.title}</p>
-          <p className="app-loader-subtitle">{content.loader?.subtitle ?? defaultContent.loader.subtitle}</p>
-          <div className="app-loader-progress" aria-hidden="true">
-            <span className="app-loader-spinner"></span>
-            <span className="app-loader-bar">
-              <span></span>
-            </span>
-          </div>
-        </div>
-      </main>
-    )
   }
 
   const isSuperAdminPage = routeHash === '#superadmin'
@@ -1640,7 +1620,9 @@ function App() {
         >
           <div className="registration-modal" onClick={(event) => event.stopPropagation()}>
             <div className="registration-modal-head">
-              <h2 id="registration-modal-title">{content.registration.modalTitle}</h2>
+              <h2 id="registration-modal-title">
+                {content.registration?.modalTitle || 'Registration Form'}
+              </h2>
               <button
                 type="button"
                 className="registration-close-btn"
