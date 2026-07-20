@@ -480,11 +480,6 @@ const normalizeConveners = (conveners) => {
 }
 
 const defaultContent = {
-  loader: {
-    kicker: 'Vignan CSE Presents',
-    title: 'QuBioDL 2K26',
-    subtitle: 'Loading conference content...',
-  },
   navbar: {
     brand: 'QuBioDL',
     subBrand: '2K26',
@@ -620,45 +615,43 @@ const buildContentFromSaved = (saved = {}) => {
           buildLegacyRegistrationFields(saved.registration?.labels, saved.registration?.customFields),
         )
 
+    const { loader: _ignoredLoader, ...restSaved } = saved
+
     return {
       ...defaultContent,
-      ...saved,
-      loader: {
-        ...defaultContent.loader,
-        ...(saved.loader ?? {}),
-      },
+      ...restSaved,
       registration: {
         ...defaultContent.registration,
-        ...(saved.registration ?? {}),
+        ...(restSaved.registration ?? {}),
         formFields: normalizedRegistrationFields,
       },
       navbar: {
         ...defaultContent.navbar,
-        ...(saved.navbar ?? {}),
-        links: normalizeNavbarLinks(saved.navbar?.links),
-        logos: normalizeNavbarLogos(saved.navbar?.logos),
+        ...(restSaved.navbar ?? {}),
+        links: normalizeNavbarLinks(restSaved.navbar?.links),
+        logos: normalizeNavbarLogos(restSaved.navbar?.logos),
       },
-      schedule: Array.isArray(saved.schedule) ? saved.schedule : defaultContent.schedule,
-      speakers: Array.isArray(saved.speakers) ? saved.speakers : defaultContent.speakers,
+      schedule: Array.isArray(restSaved.schedule) ? restSaved.schedule : defaultContent.schedule,
+      speakers: Array.isArray(restSaved.speakers) ? restSaved.speakers : defaultContent.speakers,
       committee: {
         ...defaultContent.committee,
-        ...(saved.committee ?? {}),
+        ...(restSaved.committee ?? {}),
         chiefPatrons: normalizeCommitteeMembers(
-          Array.isArray(saved.committee?.chiefPatrons)
-            ? saved.committee.chiefPatrons
+          Array.isArray(restSaved.committee?.chiefPatrons)
+            ? restSaved.committee.chiefPatrons
             : defaultContent.committee.chiefPatrons,
         ),
         patrons: normalizeCommitteeMembers(
-          Array.isArray(saved.committee?.patrons)
-            ? saved.committee.patrons
+          Array.isArray(restSaved.committee?.patrons)
+            ? restSaved.committee.patrons
             : defaultContent.committee.patrons,
         ),
-        programmeChairs: Array.isArray(saved.committee?.programmeChairs)
-          ? saved.committee.programmeChairs
+        programmeChairs: Array.isArray(restSaved.committee?.programmeChairs)
+          ? restSaved.committee.programmeChairs
           : defaultContent.committee.programmeChairs,
         conveners: normalizedConveners,
       },
-      sections: normalizeSections(saved.sections),
+      sections: normalizeSections(restSaved.sections),
     }
   } catch {
     return defaultContent
@@ -773,10 +766,11 @@ function App() {
 
     saveTimerRef.current = window.setTimeout(async () => {
       try {
+        const { loader: _ignoredLoader, ...contentWithoutLoader } = content
         const requestBody = {
           key: SITE_CONTENT_KEY,
           title: 'Site Content',
-          content,
+          content: contentWithoutLoader,
           isPublished: true,
         }
 
