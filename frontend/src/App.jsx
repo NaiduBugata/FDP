@@ -21,7 +21,7 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v29'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v34'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
   'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
@@ -324,29 +324,34 @@ const DEFAULT_SECTION_CONTENT = {
     heading: 'Seminar Objectives',
     items: [
       {
-        icon: 'developer_board',
-        title: 'Quantum Fundamentals',
-        text: 'Establish foundational knowledge in quantum mechanics applied to computing.',
+        icon: 'science',
+        title: 'Foundations of Quantum & Imaging',
+        text: 'Fundamentals of Quantum Computing (Qubits, Superposition, Entanglement) Basics of Biomedical Image Processing Interactive Q&A',
       },
       {
-        icon: 'integration_instructions',
-        title: 'DL Integration',
-        text: 'Frameworks for merging quantum circuits with deep neural networks.',
+        icon: 'neurology',
+        title: 'Deep Learning for Imaging',
+        text: 'Deep Learning Architectures (CNN, GANs, Auto encoders) Case Study: Tumor Detection & Classification Hands-on: Deep Learning Tools for Medical Imaging.',
       },
       {
-        icon: 'biotech',
-        title: 'Tumor Detection',
-        text: 'Practical applications in identifying anomalies in complex medical scans.',
+        icon: 'hub',
+        title: 'Quantum–DL Integration',
+        text: "Quantum Algorithms for Imaging (Grover's, VQE, QAOA) Hybrid Quantum–Classical Workflows",
       },
       {
-        icon: 'model_training',
+        icon: 'terminal',
         title: 'Hands-on Training',
-        text: 'Intensive lab sessions using industry-standard quantum simulators.',
+        text: 'Intensive lab sessions using industry–standard quantum simulators. Hands-on: IBM Quantum Experience & Qiskit for Biomedical Imaging',
       },
       {
-        icon: 'lightbulb',
-        title: 'Collaboration',
-        text: 'Fostering interdisciplinary research networks between clinicians and engineers.',
+        icon: 'health_and_safety',
+        title: 'Applications & Ethics',
+        text: 'Lecture: Real-Time Applications in Healthcare Imaging Case Studies: Clinical Deployments Workshop: Microsoft Quantum Development Kit Discussion: Ethics & Data Privacy',
+      },
+      {
+        icon: 'groups',
+        title: 'Collaboration & Future Directions',
+        text: 'Future Trends in Quantum Healthcare Roundtable: Academia–Industry Collaboration Group Proposal Presentations Valedictory Session & Certificate Distribution',
       },
     ],
   },
@@ -385,61 +390,61 @@ const DEFAULT_SECTION_CONTENT = {
     programmeChairsLabel: 'Programme Chair',
     convenersLabel: 'Convener & Co-Conveners',
   },
-  coreCommittee: {
-    heading: 'Core Committee',
-    names: [
-      'Dr. Sathish Kumar Satti',
-      'Dr. J. Vinoj',
-      'Mrs. Tipura Damarla',
-      'Mr. N. Uttej Kumar',
-      'Mr. Sd. Nafeez Ahmad',
-      'Mr. Sk. Dehtaj',
-      'Mr. M. Anil',
-      'Mr. Brahma Naidu',
-      'Mr. Sk. Jani',
-      'Dr. J. Veeranjaneyulu',
-      'Dr. T. Phanindhra',
-      'Mrs. G. Navya',
-      'Ms. Sk. Sajida',
-      'Mrs. R. Lalitha',
-      'Dr. James Deva Koresh',
-      'Dr. Vijitha Anandhi',
-      'Mrs. K. Jyosthna',
-      'Mrs. V. Nandini',
-      'Ms. Kagga Vyshnavi',
-      'Dr. G. Keerthi',
-      'Mrs. J. Dayanika',
-      'Mr. M. Veerendhra',
-      'Mr. T. Latish Babu',
-      'Mrs. Y. Sai Eshwari',
-      'Mrs. P. Archana',
-      'Mrs. N. Bhargavi',
-      'Ms. K. Divya',
-      'Mr. Raj Kiran',
-      'Mr. Aditya',
-      'Dr. Rambabu Kusuma',
-      'Mr. E. Akhil Babu',
-      'Mr. D. Senthil',
-      'Mr. K. Hareesh',
-      'Mr. Somaiah',
-      'Mr. Seshu Babu',
-      'Dr. Renugadevi',
-      'Dr. M. Bhargavi',
-      'Mrs. Sk. Shariefunnisa',
-      'Mr. D. Bala Kotaiah',
-      'Mr. P. Rajulu',
-      'Mrs. Siva Naga Malleswari',
-      'Ms. Mohana Sree Kurra',
-      'Ms. Likitha Manaswini',
-      'Ms. Purnima Sai',
-      'Ms. Satya Naga Bhavani Nihari',
-      'Ms. Avula Srija',
-      'Mr. Daniel Miriyala',
-      'Mr. B. Sarojini Naidu',
-      'Mr. Maruthi Velaga',
-      'Mr. A. Akshay Gupta',
-      'Ms. U. Sravani',
-      'Ms. D. Giri Nihitha',
+  departmentCommittees: {
+    heading: 'Committees',
+    items: [
+      {
+        name: 'Core Committee',
+        coordinators: ['Dr. Sathish Kumar Satti', 'Dr. J. Vinoj'],
+      },
+      {
+        name: 'Guests Hospitality & General Coordination Committee',
+        coordinators: ['Mrs. Tipura Damarla', 'Mr. N. Uttej Kumar'],
+      },
+      {
+        name: 'Refreshments Committee',
+        coordinators: ['Mr. Brahma Naidu', 'Mr. Sk. Jani'],
+      },
+      {
+        name: 'Brochure, Flex and Certificates Designing and Distribution Committee',
+        coordinators: ['Dr. J. Veeranjaneyulu', 'Dr. T. Phanindhra'],
+      },
+      {
+        name: 'Registration, Communication and Attendance Monitoring Committee',
+        coordinators: ['Mrs. G. Navya', 'Ms. Sk. Sajida', 'Mrs. R. Lalitha'],
+      },
+      {
+        name: 'Finance Committee',
+        coordinators: ['Dr. James Deva Koresh'],
+      },
+      {
+        name: 'Publicity & Media Committee',
+        coordinators: ['Mrs. K. Jyosthna', 'Mrs. V. Nandini'],
+      },
+      {
+        name: 'Feedback, Evaluation and Session Monitoring Committee',
+        coordinators: ['Dr. J. Vinoj', 'Dr. Sathish Kumar Satti'],
+      },
+      {
+        name: 'Inaugural, Keynote & Valedictory Session Management Committee',
+        coordinators: ['Dr. G. Keerthi', 'Mrs. J. Dayanika'],
+      },
+      {
+        name: 'Decoration & Stage Management Committee',
+        coordinators: ['Mrs. Y. Sai Eshwari', 'Mrs. P. Archana', 'Mrs. N. Bhargavi'],
+      },
+      {
+        name: 'Hall Booking, A/C, Media, PA System, Hardware, Live Streaming Committee',
+        coordinators: ['Dr. Rambabu Kusuma'],
+      },
+      {
+        name: 'Online Session Coordinators',
+        coordinators: ['Dr. Renugadevi', 'Dr. M. Bhargavi', 'Mrs. Sk. Shariefunnisa'],
+      },
+      {
+        name: 'Stationary Purchase Committee',
+        coordinators: ['Mr. D. Bala Kotaiah', 'Mr. P. Rajulu'],
+      },
     ],
   },
   audience: {
@@ -551,10 +556,29 @@ const normalizeSections = (sections) => {
     objectives: {
       ...DEFAULT_SECTION_CONTENT.objectives,
       ...(source.objectives ?? {}),
-      items:
-        Array.isArray(source.objectives?.items) && source.objectives.items.length > 0
-          ? source.objectives.items
-          : DEFAULT_SECTION_CONTENT.objectives.items,
+      items: (() => {
+        const defaults = DEFAULT_SECTION_CONTENT.objectives.items
+        const sourceItems =
+          Array.isArray(source.objectives?.items) && source.objectives.items.length > 0
+            ? source.objectives.items
+            : defaults
+        const looksLegacy = sourceItems.some((item) =>
+          ['quantum fundamentals', 'dl integration', 'tumor detection'].includes(
+            String(item?.title ?? '')
+              .trim()
+              .toLowerCase(),
+          ),
+        )
+
+        if (looksLegacy || sourceItems.length < 6) {
+          return defaults
+        }
+
+        return sourceItems.map((item, index) => ({
+          ...item,
+          icon: String(item?.icon ?? '').trim() || defaults[index % defaults.length].icon,
+        }))
+      })(),
     },
     legacy: {
       ...DEFAULT_SECTION_CONTENT.legacy,
@@ -601,17 +625,13 @@ const normalizeSections = (sections) => {
             )
           : DEFAULT_SECTION_CONTENT.audience.items,
     },
-    coreCommittee: {
-      ...DEFAULT_SECTION_CONTENT.coreCommittee,
-      ...(source.coreCommittee ?? {}),
-      heading:
-        !source.coreCommittee?.heading
-          ? DEFAULT_SECTION_CONTENT.coreCommittee.heading
-          : source.coreCommittee.heading,
-      names:
-        Array.isArray(source.coreCommittee?.names) && source.coreCommittee.names.length > 0
-          ? source.coreCommittee.names
-          : DEFAULT_SECTION_CONTENT.coreCommittee.names,
+    departmentCommittees: {
+      ...DEFAULT_SECTION_CONTENT.departmentCommittees,
+      ...(source.departmentCommittees ?? {}),
+      heading: DEFAULT_SECTION_CONTENT.departmentCommittees.heading,
+      items: DEFAULT_SECTION_CONTENT.departmentCommittees.items.filter(
+        (item) => !/student\s*co-?ordinators?/i.test(String(item?.name ?? '')),
+      ),
     },
     cta: {
       ...DEFAULT_SECTION_CONTENT.cta,
@@ -2190,17 +2210,25 @@ function App() {
               <h3>{content.committee.department}</h3>
               <h4>{content.committee.school}</h4>
             </div>
-          </div>
-        </section>
-
-        <section id="core-committee" className="section section-soft">
-          <div className="container">
-            <h2 className="center">{sectionContent.coreCommittee.heading}</h2>
-            <ul className="core-committee-list">
-              {(sectionContent.coreCommittee.names ?? []).map((name, index) => (
-                <li key={`${name}-${index}`}>{name}</li>
-              ))}
-            </ul>
+            <div className="department-committees">
+              <div className="department-committees-grid">
+                {(sectionContent.departmentCommittees.items ?? []).map((item, index) => (
+                  <article
+                    className={`department-committee-card${
+                      /core\s*committee/i.test(String(item.name ?? '')) ? ' is-core' : ''
+                    }`}
+                    key={`${item.name}-${index}`}
+                  >
+                    <h4>{item.name}</h4>
+                    <ul>
+                      {(item.coordinators ?? []).map((coordinator, coordinatorIndex) => (
+                        <li key={`${item.name}-${coordinator}-${coordinatorIndex}`}>{coordinator}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
