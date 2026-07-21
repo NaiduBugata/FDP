@@ -1,18 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import AdminPage from './AdminPage.jsx'
 import AdminRegistrationsPage from './AdminRegistrationsPage.jsx'
 import bala from './assets/bala.jpg'
 import noni from './assets/noni.png'
-import subbu from './assets/subbu.png'
-import kapil from './assets/kapil.png'
+import subbu from './assets/subbu-gorthi.png'
+import kapil from './assets/kapil-soni.png'
 import kumar from './assets/kumar.png'
 import vignanLogo from './assets/vignan logo updated.png'
+import chiefRathaiah from './assets/chief-rathaiah.png'
+import chiefSrikrishna from './assets/chief-srikrishna.png'
+import chiefMeghana from './assets/chief-meghana.png'
+import patronSubbaRao from './assets/patron-subba-rao.png'
+import patronKishore from './assets/patron-kishore.png'
+import patronPmvRao from './assets/patron-pmv-rao.png'
+import convenerSunil from './assets/convener-sunil.png'
+import coConvenerGandhi from './assets/co-convener-gandhi.png'
+import coConvenerMondal from './assets/co-convener-mondal.png'
+import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v5'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v29'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
+const WHATSAPP_GROUP_URL =
+  'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
 const DEFAULT_API_BASE_URL = import.meta.env.PROD
 	? 'https://fdp-r80r.onrender.com'
 	: 'http://localhost:5000'
@@ -23,6 +35,140 @@ const API_BASE_URL = (() => {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
 })()
 const SITE_CONTENT_KEY = 'site-content'
+
+const DATE_ORDINAL_PATTERN = /(\d+)(st|nd|rd|th)\b/gi
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+const getOrdinalSuffix = (dayNumber) => {
+  const day = Number(dayNumber)
+  const mod100 = day % 100
+  if (mod100 >= 11 && mod100 <= 13) {
+    return 'th'
+  }
+  switch (day % 10) {
+    case 1:
+      return 'st'
+    case 2:
+      return 'nd'
+    case 3:
+      return 'rd'
+    default:
+      return 'th'
+  }
+}
+
+const formatNumericDateWithOrdinal = (value = '') => {
+  const match = String(value)
+    .trim()
+    .match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/)
+  if (!match) {
+    return String(value ?? '')
+  }
+
+  const day = Number(match[1])
+  const month = Number(match[2])
+  const year = match[3]
+  if (!day || month < 1 || month > 12) {
+    return String(value)
+  }
+
+  return `${day}${getOrdinalSuffix(day)} ${MONTH_NAMES[month - 1]} ${year}`
+}
+
+const renderTextWithDateOrdinals = (text) => {
+  const value = String(text ?? '')
+  if (!value) {
+    return value
+  }
+
+  const nodes = []
+  let lastIndex = 0
+  const pattern = new RegExp(DATE_ORDINAL_PATTERN.source, 'gi')
+  let match = pattern.exec(value)
+
+  while (match) {
+    if (match.index > lastIndex) {
+      nodes.push(value.slice(lastIndex, match.index))
+    }
+
+    nodes.push(
+      <Fragment key={`ordinal-${match.index}-${match[0]}`}>
+        {match[1]}
+        <sup className="date-ordinal">{match[2]}</sup>
+      </Fragment>,
+    )
+
+    lastIndex = match.index + match[0].length
+    match = pattern.exec(value)
+  }
+
+  if (lastIndex < value.length) {
+    nodes.push(value.slice(lastIndex))
+  }
+
+  return nodes.length > 0 ? nodes : value
+}
+
+const drawPdfTextWithDateOrdinals = (doc, text, x, y) => {
+  const value = String(text ?? '')
+  if (!value) {
+    return
+  }
+
+  const baseSize = doc.getFontSize()
+  const font = doc.getFont()
+  let cursorX = x
+  let lastIndex = 0
+  const pattern = new RegExp(DATE_ORDINAL_PATTERN.source, 'gi')
+  let match = pattern.exec(value)
+
+  while (match) {
+    const before = value.slice(lastIndex, match.index)
+    if (before) {
+      doc.setFont(font.fontName, font.fontStyle)
+      doc.setFontSize(baseSize)
+      doc.text(before, cursorX, y)
+      cursorX += doc.getTextWidth(before)
+    }
+
+    doc.setFont(font.fontName, font.fontStyle)
+    doc.setFontSize(baseSize)
+    doc.text(match[1], cursorX, y)
+    cursorX += doc.getTextWidth(match[1])
+
+    const ordinalSize = Math.max(6, baseSize * 0.62)
+    const raiseMm = ((baseSize - ordinalSize) * 0.352778) * 0.7
+    doc.setFontSize(ordinalSize)
+    doc.text(match[2], cursorX, y - raiseMm)
+    cursorX += doc.getTextWidth(match[2])
+
+    lastIndex = match.index + match[0].length
+    match = pattern.exec(value)
+  }
+
+  const rest = value.slice(lastIndex)
+  if (rest) {
+    doc.setFont(font.fontName, font.fontStyle)
+    doc.setFontSize(baseSize)
+    doc.text(rest, cursorX, y)
+  }
+
+  doc.setFont(font.fontName, font.fontStyle)
+  doc.setFontSize(baseSize)
+}
 
 const parseJwtPayload = (token = '') => {
   try {
@@ -56,7 +202,7 @@ const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'full-name',
     name: 'fullName',
-    label: 'Full Name',
+    label: 'Full Name (Institution/Organization)',
     type: 'text',
     required: true,
     section: '1. Basic Details',
@@ -74,7 +220,7 @@ const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'email-id',
     name: 'emailId',
-    label: 'Email ID',
+    label: 'Email ID (official)',
     type: 'email',
     required: true,
     section: '1. Basic Details',
@@ -128,11 +274,11 @@ const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'declaration',
     name: 'declaration',
-    label: 'I will attend the sessions and follow guidelines (Yes/No)',
-    type: 'select',
+    label: 'I agree to attend the sessions and follow the guidelines',
+    type: 'checkbox',
     required: true,
     section: '5. Declaration',
-    options: ['Yes', 'No'],
+    options: [],
   },
 ]
 const DEFAULT_NAVBAR_LINKS = [
@@ -149,12 +295,12 @@ const DEFAULT_SECTION_CONTENT = {
     titlePrefix: 'Next-Gen',
     titleHighlight: 'Healthcare',
     subtitle: 'Biomedical Imaging through Quantum-Driven Deep Learning (QuBioDL 2K26)',
-    metaDate: '01st-05th June 2026',
+    metaDate: '27th - 31st July 2026',
     metaMode: 'Hybrid Mode',
     metaSeats: 'Limited to 100 Seats',
     registerButtonText: 'Register Now',
     scheduleButtonText: 'View Schedule',
-    daysLeftSuffix: 'days left until seminar begins',
+    daysLeftSuffix: 'left until seminar begins',
   },
   about: {
     heading: 'About the Programme',
@@ -235,9 +381,66 @@ const DEFAULT_SECTION_CONTENT = {
   committee: {
     heading: 'Organizing Committee',
     chiefPatronsLabel: 'Chief Patrons',
-    patronsLabel: 'Co-Patrons',
-    programmeChairsLabel: 'Programme Chairs',
+    patronsLabel: 'Patrons',
+    programmeChairsLabel: 'Programme Chair',
     convenersLabel: 'Convener & Co-Conveners',
+  },
+  coreCommittee: {
+    heading: 'Core Committee',
+    names: [
+      'Dr. Sathish Kumar Satti',
+      'Dr. J. Vinoj',
+      'Mrs. Tipura Damarla',
+      'Mr. N. Uttej Kumar',
+      'Mr. Sd. Nafeez Ahmad',
+      'Mr. Sk. Dehtaj',
+      'Mr. M. Anil',
+      'Mr. Brahma Naidu',
+      'Mr. Sk. Jani',
+      'Dr. J. Veeranjaneyulu',
+      'Dr. T. Phanindhra',
+      'Mrs. G. Navya',
+      'Ms. Sk. Sajida',
+      'Mrs. R. Lalitha',
+      'Dr. James Deva Koresh',
+      'Dr. Vijitha Anandhi',
+      'Mrs. K. Jyosthna',
+      'Mrs. V. Nandini',
+      'Ms. Kagga Vyshnavi',
+      'Dr. G. Keerthi',
+      'Mrs. J. Dayanika',
+      'Mr. M. Veerendhra',
+      'Mr. T. Latish Babu',
+      'Mrs. Y. Sai Eshwari',
+      'Mrs. P. Archana',
+      'Mrs. N. Bhargavi',
+      'Ms. K. Divya',
+      'Mr. Raj Kiran',
+      'Mr. Aditya',
+      'Dr. Rambabu Kusuma',
+      'Mr. E. Akhil Babu',
+      'Mr. D. Senthil',
+      'Mr. K. Hareesh',
+      'Mr. Somaiah',
+      'Mr. Seshu Babu',
+      'Dr. Renugadevi',
+      'Dr. M. Bhargavi',
+      'Mrs. Sk. Shariefunnisa',
+      'Mr. D. Bala Kotaiah',
+      'Mr. P. Rajulu',
+      'Mrs. Siva Naga Malleswari',
+      'Ms. Mohana Sree Kurra',
+      'Ms. Likitha Manaswini',
+      'Ms. Purnima Sai',
+      'Ms. Satya Naga Bhavani Nihari',
+      'Ms. Avula Srija',
+      'Mr. Daniel Miriyala',
+      'Mr. B. Sarojini Naidu',
+      'Mr. Maruthi Velaga',
+      'Mr. A. Akshay Gupta',
+      'Ms. U. Sravani',
+      'Ms. D. Giri Nihitha',
+    ],
   },
   audience: {
     heading: 'Who Should Attend?',
@@ -269,9 +472,23 @@ const DEFAULT_SECTION_CONTENT = {
     eventText: 'A collaborative platform for healthcare professionals and technology researchers.',
     departmentTitle: 'Department of CSE',
     departmentText: 'Vignan\'s Foundation for Science, Technology and Research, Vadlamudi, Guntur.',
-    linksTitle: 'Quick Links',
-    links: ['Privacy Policy', 'Terms of Service', 'Contact Support'],
-    copyright: '\u00a9 2024 International Conference on Health and AI. All rights reserved.',
+    contactTitle: 'Contact',
+    contactGroups: [
+      {
+        title: 'Convener',
+        people: [
+          { name: 'Dr. Sunil Babu Melingi', contact: '+91-8333001991' },
+        ],
+      },
+      {
+        title: 'Co-Conveners',
+        people: [
+          { name: 'Mr. Ongole Gandhi', contact: '+91-9701463728' },
+          { name: 'Mr. Sourav Mondal', contact: '+91-9831422643' },
+        ],
+      },
+    ],
+    copyright: '\u00a9 2026 National Conference on Health and AI VFSTR CSE. All rights reserved.',
   },
 }
 
@@ -311,6 +528,17 @@ const normalizeSections = (sections) => {
     hero: {
       ...DEFAULT_SECTION_CONTENT.hero,
       ...(source.hero ?? {}),
+      metaDate:
+        !source.hero?.metaDate ||
+        /june\s*2026/i.test(String(source.hero.metaDate)) ||
+        /01st|05th/i.test(String(source.hero.metaDate))
+          ? DEFAULT_SECTION_CONTENT.hero.metaDate
+          : source.hero.metaDate,
+      daysLeftSuffix:
+        !source.hero?.daysLeftSuffix ||
+        String(source.hero.daysLeftSuffix).trim().toLowerCase() === 'days left until seminar begins'
+          ? DEFAULT_SECTION_CONTENT.hero.daysLeftSuffix
+          : source.hero.daysLeftSuffix,
     },
     about: {
       ...DEFAULT_SECTION_CONTENT.about,
@@ -345,9 +573,16 @@ const normalizeSections = (sections) => {
       ...(source.committee ?? {}),
       patronsLabel:
         !source.committee?.patronsLabel ||
-        String(source.committee.patronsLabel).trim().toLowerCase() === 'patrons'
-          ? 'Co-Patrons'
+        ['co-patrons', 'co patrons'].includes(
+          String(source.committee.patronsLabel).trim().toLowerCase(),
+        )
+          ? DEFAULT_SECTION_CONTENT.committee.patronsLabel
           : source.committee.patronsLabel,
+      programmeChairsLabel:
+        !source.committee?.programmeChairsLabel ||
+        String(source.committee.programmeChairsLabel).trim().toLowerCase() === 'programme chairs'
+          ? DEFAULT_SECTION_CONTENT.committee.programmeChairsLabel
+          : source.committee.programmeChairsLabel,
       convenersLabel:
         !source.committee?.convenersLabel ||
         String(source.committee.convenersLabel).trim().toLowerCase() === 'convener & co-convener'
@@ -365,6 +600,18 @@ const normalizeSections = (sections) => {
                 : item,
             )
           : DEFAULT_SECTION_CONTENT.audience.items,
+    },
+    coreCommittee: {
+      ...DEFAULT_SECTION_CONTENT.coreCommittee,
+      ...(source.coreCommittee ?? {}),
+      heading:
+        !source.coreCommittee?.heading
+          ? DEFAULT_SECTION_CONTENT.coreCommittee.heading
+          : source.coreCommittee.heading,
+      names:
+        Array.isArray(source.coreCommittee?.names) && source.coreCommittee.names.length > 0
+          ? source.coreCommittee.names
+          : DEFAULT_SECTION_CONTENT.coreCommittee.names,
     },
     cta: {
       ...DEFAULT_SECTION_CONTENT.cta,
@@ -389,10 +636,17 @@ const normalizeSections = (sections) => {
     footer: {
       ...DEFAULT_SECTION_CONTENT.footer,
       ...(source.footer ?? {}),
-      links:
-        Array.isArray(source.footer?.links) && source.footer.links.length > 0
-          ? source.footer.links
-          : DEFAULT_SECTION_CONTENT.footer.links,
+      contactTitle:
+        !source.footer?.contactTitle ||
+        String(source.footer.contactTitle).trim().toLowerCase() === 'quick links'
+          ? DEFAULT_SECTION_CONTENT.footer.contactTitle
+          : source.footer.contactTitle,
+      contactGroups: DEFAULT_SECTION_CONTENT.footer.contactGroups,
+      copyright:
+        !source.footer?.copyright ||
+        String(source.footer.copyright).includes('2024 International Conference')
+          ? DEFAULT_SECTION_CONTENT.footer.copyright
+          : source.footer.copyright,
     },
   }
 }
@@ -406,26 +660,40 @@ const normalizeRegistrationFields = (fields) => {
   const hasLegacyUploadOrSignature =
     fieldNames.has('passportPhoto') || fieldNames.has('signature') || !fieldNames.has('apaarId')
   const participantTypeField = fields.find((field) => field?.name === 'participantType')
+  const declarationField = fields.find((field) => field?.name === 'declaration')
   const hasLegacyParticipantType =
     !participantTypeField ||
     participantTypeField.type !== 'select' ||
     !Array.isArray(participantTypeField.options) ||
     participantTypeField.options.length === 0
+  const hasLegacyDeclaration =
+    !declarationField ||
+    declarationField.type !== 'checkbox' ||
+    /yes\/no/i.test(String(declarationField.label ?? ''))
 
-  if (hasLegacyUploadOrSignature || hasLegacyParticipantType) {
+  if (hasLegacyUploadOrSignature || hasLegacyParticipantType || hasLegacyDeclaration) {
     return DEFAULT_REGISTRATION_FIELDS
   }
 
   return fields
-    .map((field, index) => ({
-      id: field?.id ?? `field-${index + 1}`,
-      name: field?.name ?? `field_${index + 1}`,
-      label: field?.label ?? `Field ${index + 1}`,
-      type: field?.type ?? 'text',
-      required: Boolean(field?.required),
-      section: field?.section ?? 'Additional Details',
-      options: Array.isArray(field?.options) ? field.options : [],
-    }))
+    .map((field, index) => {
+      const name = field?.name ?? `field_${index + 1}`
+      const isOptionalApaar = name === 'apaarId'
+      const defaultField = DEFAULT_REGISTRATION_FIELDS.find((item) => item.name === name)
+      const forcedLabelNames = new Set(['emailId', 'fullName', 'institution'])
+      return {
+        id: field?.id ?? `field-${index + 1}`,
+        name,
+        label:
+          forcedLabelNames.has(name) && defaultField
+            ? defaultField.label
+            : field?.label ?? `Field ${index + 1}`,
+        type: field?.type ?? 'text',
+        required: !isOptionalApaar,
+        section: field?.section ?? 'Additional Details',
+        options: Array.isArray(field?.options) ? field.options : [],
+      }
+    })
     .filter((field) => field.name.trim() && field.label.trim())
 }
 
@@ -489,6 +757,54 @@ const normalizeCommitteeMembers = (members) => {
     .filter((member) => member.name || member.details || member.image)
 }
 
+const PLACEHOLDER_COMMITTEE_TITLES = new Set([
+  'chairman',
+  'vice-chairman',
+  'vice chairman',
+  'ceo',
+  'chancellor',
+  'vice-chancellor',
+  'vice chancellor',
+  'registrar',
+])
+
+const mergeCommitteeMemberDefaults = (members, fallback) => {
+  const normalized = Array.isArray(members) ? members : []
+  return normalized.map((member) => {
+    const match = fallback.find(
+      (item) => String(item.name).trim().toLowerCase() === String(member.name ?? '').trim().toLowerCase(),
+    )
+    if (!match) {
+      return member
+    }
+    return {
+      ...member,
+      details: member.details || match.details,
+      image: match.image || member.image,
+    }
+  })
+}
+
+const normalizeNamedCommitteeGroup = (members, fallback, requiredNamePattern = null) => {
+  const normalized = normalizeCommitteeMembers(members)
+  if (!normalized.length) {
+    return fallback
+  }
+
+  if (requiredNamePattern && !normalized.some((member) => requiredNamePattern.test(member.name ?? ''))) {
+    return fallback
+  }
+
+  const looksLikePlaceholders = normalized.every((member) => {
+    const nameKey = String(member.name ?? '')
+      .trim()
+      .toLowerCase()
+    return PLACEHOLDER_COMMITTEE_TITLES.has(nameKey) || !String(member.details ?? '').trim()
+  })
+
+  return looksLikePlaceholders ? fallback : normalized
+}
+
 const normalizeConveners = (conveners) => {
   const source = Array.isArray(conveners) ? conveners : []
   const hasRequiredConvener = source.some(
@@ -548,7 +864,30 @@ const normalizeConveners = (conveners) => {
     return !key.includes('gandhi') && !key.includes('mondal')
   })
 
-  return [...mainConvener, ...gandhi, ...mondal, ...remainingCo, ...others]
+  const ordered = [...mainConvener, ...gandhi, ...mondal, ...remainingCo, ...others]
+
+  return ordered.map((item) => {
+    const key = (item?.name ?? '').toLowerCase().replace(/\s+/g, '')
+    const match = defaultContent.committee.conveners.find((fallback) => {
+      const fallbackKey = (fallback?.name ?? '').toLowerCase().replace(/\s+/g, '')
+      if (key.includes('sunil') && fallbackKey.includes('sunil')) return true
+      if (key.includes('gandhi') && fallbackKey.includes('gandhi')) return true
+      if (key.includes('mondal') && fallbackKey.includes('mondal')) return true
+      return fallbackKey === key
+    })
+    if (!match) {
+      return item
+    }
+    return {
+      ...item,
+      title: match.title || item.title,
+      name: match.name,
+      role: match.role,
+      contact: match.contact,
+      email: match.email,
+      image: match.image || item.image,
+    }
+  })
 }
 
 const DEFAULT_PROGRAM_SCHEDULE = [
@@ -718,31 +1057,36 @@ const defaultContent = {
     school: 'School of Computing and Informatics (SoCI)',
     chiefPatrons: [
       {
-        name: 'Chairman',
-        details: '',
-        image: '',
+        name: 'Dr. Lavu Rathaiah',
+        details: 'Chairman of Vignan Groups',
+        image: chiefRathaiah,
       },
       {
-        name: 'Vice-Chairman',
-        details: '',
-        image: '',
+        name: 'Sri. Lavu Srikrishna Devarayulu',
+        details: 'Vice-Chairman, VFSTR',
+        image: chiefSrikrishna,
       },
       {
-        name: 'CEO',
-        details: '',
-        image: '',
+        name: 'Dr. Meghana',
+        details: 'CEO, VFSTR',
+        image: chiefMeghana,
       },
     ],
     patrons: [
       {
-        name: 'Vice-Chancellor',
-        details: '',
-        image: '',
+        name: 'Prof. P. Subba Rao',
+        details: 'Chancellor, VFSTR',
+        image: patronSubbaRao,
       },
       {
-        name: 'Registrar',
-        details: '',
-        image: '',
+        name: 'Prof. K.V.K. Kishore',
+        details: 'Vice Chancellor, VFSTR',
+        image: patronKishore,
+      },
+      {
+        name: 'Prof. P.M.V Rao',
+        details: 'Registrar, VFSTR',
+        image: patronPmvRao,
       },
     ],
     programmeChairs: [
@@ -761,18 +1105,18 @@ const defaultContent = {
       {
         title: 'Convener',
         name: 'Dr. Sunil Babu Melingi',
-        role: 'Assistant Professor, CSE',
+        role: 'Assoc. Professor, CSE',
         contact: '+91-8333001991',
         email: 'drmsb_cse@vignan.ac.in',
-        image: '',
+        image: convenerSunil,
       },
       {
         title: 'Co-Conveners',
-        name: 'Mr. O. Gandhi',
+        name: 'Mr. Ongole Gandhi',
         role: 'Assistant Professor, CSE',
-        contact: '',
-        email: '',
-        image: '',
+        contact: '+91-9701463728',
+        email: 'og_cse@vignan.ac.in',
+        image: coConvenerGandhi,
       },
       {
         title: 'Co-Conveners',
@@ -780,7 +1124,7 @@ const defaultContent = {
         role: 'Assistant Professor, CSE',
         contact: '+91-9831422643',
         email: 'svml_cse@vignan.ac.in',
-        image: '',
+        image: coConvenerMondal,
       },
     ],
   },
@@ -817,24 +1161,59 @@ const buildContentFromSaved = (saved = {}) => {
         logos: normalizeNavbarLogos(restSaved.navbar?.logos),
       },
       schedule: normalizeProgramSchedule(saved.schedule),
-      speakers: Array.isArray(restSaved.speakers) ? restSaved.speakers : defaultContent.speakers,
+      speakers: (Array.isArray(restSaved.speakers) ? restSaved.speakers : defaultContent.speakers).map(
+        (speaker) => {
+          const match = defaultContent.speakers.find(
+            (item) =>
+              String(item.name).trim().toLowerCase() === String(speaker.name ?? '').trim().toLowerCase(),
+          )
+          if (!match) {
+            return speaker
+          }
+          return {
+            ...speaker,
+            image: match.image ?? speaker.image,
+          }
+        },
+      ),
       committee: {
         ...defaultContent.committee,
         ...(restSaved.committee ?? {}),
-        chiefPatrons: normalizeCommitteeMembers(
-          Array.isArray(restSaved.committee?.chiefPatrons)
-            ? restSaved.committee.chiefPatrons
-            : defaultContent.committee.chiefPatrons,
+        chiefPatrons: mergeCommitteeMemberDefaults(
+          normalizeNamedCommitteeGroup(
+            restSaved.committee?.chiefPatrons,
+            defaultContent.committee.chiefPatrons,
+            /rathaiah/i,
+          ),
+          defaultContent.committee.chiefPatrons,
         ),
-        patrons: normalizeCommitteeMembers(
-          Array.isArray(restSaved.committee?.patrons)
-            ? restSaved.committee.patrons
-            : defaultContent.committee.patrons,
+        patrons: mergeCommitteeMemberDefaults(
+          normalizeNamedCommitteeGroup(
+            restSaved.committee?.patrons,
+            defaultContent.committee.patrons,
+            /subba\s*rao/i,
+          ),
+          defaultContent.committee.patrons,
         ),
         programmeChairs: Array.isArray(restSaved.committee?.programmeChairs)
           ? restSaved.committee.programmeChairs
           : defaultContent.committee.programmeChairs,
-        conveners: normalizedConveners,
+        conveners: mergeCommitteeMemberDefaults(
+          normalizedConveners,
+          defaultContent.committee.conveners,
+        ).map((member) => {
+          if (
+            String(member.name ?? '')
+              .trim()
+              .toLowerCase() === REQUIRED_CONVENER_NAME.toLowerCase()
+          ) {
+            return {
+              ...member,
+              image: defaultContent.committee.conveners[0].image,
+            }
+          }
+          return member
+        }),
       },
       sections: normalizeSections(restSaved.sections),
     }
@@ -891,6 +1270,7 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [today, setToday] = useState(new Date())
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
+  const [registrationStep, setRegistrationStep] = useState(1)
   const [formData, setFormData] = useState({
     fullName: '',
     mobileNumber: '',
@@ -900,7 +1280,7 @@ function App() {
     participantType: '',
     mode: '',
     apaarId: '',
-    declaration: '',
+    declaration: false,
   })
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false)
   const [registrationSubmitMessage, setRegistrationSubmitMessage] = useState('')
@@ -909,7 +1289,7 @@ function App() {
   const saveTimerRef = useRef(null)
 
   useEffect(() => {
-    const id = window.setInterval(() => setToday(new Date()), 60000)
+    const id = window.setInterval(() => setToday(new Date()), 1000)
     return () => window.clearInterval(id)
   }, [])
 
@@ -1096,19 +1476,38 @@ function App() {
 
   const openRegistrationForm = () => {
     setIsMenuOpen(false)
+    setRegistrationStep(1)
+    setRegistrationSubmitError('')
+    setRegistrationSubmitMessage('')
     setIsRegisterOpen(true)
   }
 
   const closeRegistrationForm = () => {
     setIsRegisterOpen(false)
+    setRegistrationStep(1)
+    setRegistrationSubmitError('')
+    setRegistrationSubmitMessage('')
   }
 
   const handleFieldChange = (event) => {
-    const { name, value, files, type } = event.target
+    const { name, value, files, type, checked } = event.target
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'file' ? files?.[0] ?? null : value,
+      [name]: type === 'file' ? files?.[0] ?? null : type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const handleRegistrationNext = (event) => {
+    event.preventDefault()
+    setRegistrationSubmitError('')
+    setRegistrationSubmitMessage('')
+
+    if (!formData.declaration) {
+      setRegistrationSubmitError('Please agree to attend the sessions and follow the guidelines.')
+      return
+    }
+
+    setRegistrationStep(2)
   }
 
   const handleFormSubmit = async (event) => {
@@ -1119,6 +1518,10 @@ function App() {
     setIsSubmittingRegistration(true)
 
     try {
+      if (!formData.declaration) {
+        throw new Error('Please agree to attend the sessions and follow the guidelines.')
+      }
+
       const payload = {
         fullName: formData.fullName,
         mobileNumber: formData.mobileNumber,
@@ -1128,7 +1531,7 @@ function App() {
         participantType: formData.participantType,
         mode: formData.mode,
         apaarId: formData.apaarId?.trim?.() ?? '',
-        declaration: formData.declaration,
+        declaration: 'Yes',
       }
 
       const response = await fetch(`${API_BASE_URL}/registrations`, {
@@ -1157,8 +1560,9 @@ function App() {
         participantType: '',
         mode: '',
         apaarId: '',
-        declaration: '',
+        declaration: false,
       })
+      setRegistrationStep(1)
       window.setTimeout(() => {
         setIsRegisterOpen(false)
       }, 700)
@@ -1217,12 +1621,26 @@ function App() {
     window.location.hash = ''
   }
 
-  const daysLeft = useMemo(() => {
-    const target = new Date('2026-06-01T00:00:00')
-    const diffMs = target.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    return diffDays > 0 ? diffDays : 0
+  const timeLeft = useMemo(() => {
+    const target = new Date('2026-07-27T09:00:00')
+    const diffMs = Math.max(0, target.getTime() - today.getTime())
+    const totalSeconds = Math.floor(diffMs / 1000)
+    const days = Math.floor(totalSeconds / (60 * 60 * 24))
+    const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60))
+    const minutes = Math.floor((totalSeconds % (60 * 60)) / 60)
+    const seconds = totalSeconds % 60
+
+    return { days, hours, minutes, seconds, isComplete: diffMs === 0 }
   }, [today])
+
+  const timeLeftLabel = useMemo(() => {
+    if (timeLeft.isComplete) {
+      return 'Seminar has started'
+    }
+
+    const pad = (value) => String(value).padStart(2, '0')
+    return `${timeLeft.days}d ${pad(timeLeft.hours)}h ${pad(timeLeft.minutes)}m ${pad(timeLeft.seconds)}s`
+  }, [timeLeft])
 
   const registrationSections = useMemo(() => {
     const grouped = {}
@@ -1264,7 +1682,12 @@ function App() {
       doc.setTextColor(255, 255, 255)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(14)
-      doc.text(sectionContent.schedule.heading || 'Program Schedule', marginX, 12)
+      drawPdfTextWithDateOrdinals(
+        doc,
+        sectionContent.schedule.heading || 'Program Schedule',
+        marginX,
+        12,
+      )
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
@@ -1282,7 +1705,8 @@ function App() {
     }
 
     content.schedule.forEach((day) => {
-      const dayLabel = [day.dayTitle, day.date].filter(Boolean).join('  ·  ')
+      const dayDateLabel = formatNumericDateWithOrdinal(day.date)
+      const dayLabel = [day.dayTitle, dayDateLabel].filter(Boolean).join('  ·  ')
       const dayLines = doc.splitTextToSize(dayLabel || 'Program Day', contentWidth)
 
       if (y + 18 > pageHeight - footerReserve) {
@@ -1294,7 +1718,9 @@ function App() {
       doc.setTextColor(11, 107, 107)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
-      doc.text(dayLines, marginX, y)
+      dayLines.forEach((line, lineIndex) => {
+        drawPdfTextWithDateOrdinals(doc, line, marginX, y + lineIndex * 5.5)
+      })
       y += dayLines.length * 5.5 + 3
 
       doc.setFillColor(11, 107, 107)
@@ -1568,14 +1994,16 @@ function App() {
               </a>
             </div>
             <p className="hero-meta-line">
-              <span>{sectionContent.hero.metaDate}</span>
+              <span>{renderTextWithDateOrdinals(sectionContent.hero.metaDate)}</span>
               <span className="hero-meta-dot" aria-hidden="true" />
               <span>{sectionContent.hero.metaMode}</span>
               <span className="hero-meta-dot" aria-hidden="true" />
               <span>{sectionContent.hero.metaSeats}</span>
               <span className="hero-meta-dot" aria-hidden="true" />
               <span>
-                {daysLeft} {sectionContent.hero.daysLeftSuffix}
+                {timeLeft.isComplete
+                  ? timeLeftLabel
+                  : `${timeLeftLabel} ${sectionContent.hero.daysLeftSuffix}`}
               </span>
             </p>
           </div>
@@ -1655,7 +2083,9 @@ function App() {
             <div className="row-top">
               {speakers.slice(0, 3).map((speaker) => (
                 <article className={`resource-card ${speaker.image ? '' : 'resource-card-no-image'}`} key={speaker.name}>
-                  {speaker.image ? <img src={speaker.image} alt={speaker.name} /> : null}
+                  {speaker.image ? (
+                    <img src={speaker.image} alt={speaker.name} />
+                  ) : null}
                   <h3>{speaker.name}</h3>
                   <p>{speaker.role}</p>
                   <p className="speaker-org">{speaker.org}</p>
@@ -1665,7 +2095,9 @@ function App() {
             <div className="row-bottom">
               {speakers.slice(3).map((speaker) => (
                 <article className={`resource-card ${speaker.image ? '' : 'resource-card-no-image'}`} key={speaker.name}>
-                  {speaker.image ? <img src={speaker.image} alt={speaker.name} /> : null}
+                  {speaker.image ? (
+                    <img src={speaker.image} alt={speaker.name} />
+                  ) : null}
                   <h3>{speaker.name}</h3>
                   <p>{speaker.role}</p>
                   <p className="speaker-org">{speaker.org}</p>
@@ -1681,19 +2113,25 @@ function App() {
 
         <section id="committee" className="section">
           <div className="container">
-            <h2 className="center">{sectionContent.committee.heading}</h2>
-            <div className="committee-top center">
-              {/* <p className="committee-kicker">Organized by</p> */}
-              <h3>{content.committee.department}</h3>
-              <h4>{content.committee.school}</h4>
-            </div>
             <div className="committee-stack">
               <section className="committee-group">
                 <h3 className="section-label">{sectionContent.committee.chiefPatronsLabel}</h3>
-                <div className="committee-member-grid">
+                <div className="convener-grid">
                   {content.committee.chiefPatrons.map((member, index) => (
-                    <article className="committee-member-card" key={`${member.name}-${index}`}>
-                      {member.image ? <img className="committee-photo" src={member.image} alt={member.name} /> : null}
+                    <article className="committee-contact-card committee-profile-card" key={`${member.name}-${index}`}>
+                      {member.image ? (
+                        <img
+                          className={`committee-photo${
+                            /rathaiah/i.test(member.name)
+                              ? ' committee-photo-up'
+                              : /srikrishna|devarayulu/i.test(member.name)
+                                ? ' committee-photo-left'
+                                : ''
+                          }`}
+                          src={member.image}
+                          alt={member.name}
+                        />
+                      ) : null}
                       <p className="committee-name">{member.name}</p>
                       {member.details ? <p className="committee-role">{member.details}</p> : null}
                     </article>
@@ -1703,9 +2141,9 @@ function App() {
 
               <section className="committee-group">
                 <h3 className="section-label">{sectionContent.committee.patronsLabel}</h3>
-                <div className="programme-grid">
+                <div className="convener-grid">
                   {content.committee.patrons.map((member, index) => (
-                    <article className="card committee-text-card" key={`${member.name}-${index}`}>
+                    <article className="committee-contact-card committee-profile-card" key={`${member.name}-${index}`}>
                       {member.image ? <img className="committee-photo" src={member.image} alt={member.name} /> : null}
                       <p className="committee-name">{member.name}</p>
                       {member.details ? <p className="committee-role">{member.details}</p> : null}
@@ -1716,12 +2154,16 @@ function App() {
 
               <section className="committee-group">
                 <h3 className="section-label">{sectionContent.committee.programmeChairsLabel}</h3>
-                <div className="programme-grid">
+                <div
+                  className={`convener-grid programme-chair-grid${
+                    content.committee.programmeChairs.length === 2 ? ' is-two' : ''
+                  }`}
+                >
                   {content.committee.programmeChairs.map((chair, index) => (
-                    <article className="card committee-text-card" key={`${chair.name}-${index}`}>
+                    <article className="committee-contact-card committee-profile-card" key={`${chair.name}-${index}`}>
                       {chair.image ? <img className="committee-photo" src={chair.image} alt={chair.name} /> : null}
                       <p className="committee-name">{chair.name}</p>
-                      <p className="committee-role">{chair.role}</p>
+                      {chair.role ? <p className="committee-role">{chair.role}</p> : null}
                     </article>
                   ))}
                 </div>
@@ -1736,13 +2178,29 @@ function App() {
                       <h4>{convener.title}</h4>
                       <p className="committee-name">{convener.name}</p>
                       <p className="committee-role">{convener.role}</p>
-                      <p>Contact: {convener.contact}</p>
-                      <p>Email: {convener.email}</p>
+                      {convener.contact ? <p>Contact: {convener.contact}</p> : null}
+                      {convener.email ? <p>Email: {convener.email}</p> : null}
                     </article>
                   ))}
                 </div>
               </section>
             </div>
+            <div className="committee-top committee-top-below center">
+              <h2>{sectionContent.committee.heading}</h2>
+              <h3>{content.committee.department}</h3>
+              <h4>{content.committee.school}</h4>
+            </div>
+          </div>
+        </section>
+
+        <section id="core-committee" className="section section-soft">
+          <div className="container">
+            <h2 className="center">{sectionContent.coreCommittee.heading}</h2>
+            <ul className="core-committee-list">
+              {(sectionContent.coreCommittee.names ?? []).map((name, index) => (
+                <li key={`${name}-${index}`}>{name}</li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -1787,7 +2245,7 @@ function App() {
         <section id="schedule" className="section section-soft">
           <div className="container">
             <div className="timeline-head">
-              <h2>{sectionContent.schedule.heading}</h2>
+              <h2>{renderTextWithDateOrdinals(sectionContent.schedule.heading)}</h2>
               <button className="timeline-btn" type="button" onClick={downloadSchedule}>
                 <span className="material-symbols-outlined">download</span>
                 {sectionContent.schedule.buttonText}
@@ -1802,7 +2260,11 @@ function App() {
                       <span className="program-day-badge">Day {dayIndex + 1}</span>
                       <h3>{day.dayTitle?.replace(/^DAY\s*\d+\s*:\s*/i, '') || day.dayTitle}</h3>
                     </div>
-                    {day.date ? <span className="program-day-date">{day.date}</span> : null}
+                    {day.date ? (
+                      <span className="program-day-date">
+                        {renderTextWithDateOrdinals(formatNumericDateWithOrdinal(day.date))}
+                      </span>
+                    ) : null}
                   </header>
                   <div className="program-table-wrap">
                     <table className="program-table">
@@ -1845,26 +2307,45 @@ function App() {
       </main>
 
       <footer className="footer">
-        <div className="container footer-grid">
-          <div>
-            <h3>{sectionContent.footer.eventTitle}</h3>
-            <p>{sectionContent.footer.eventText}</p>
-            <div className="footer-icons">
-              <span className="material-symbols-outlined">share</span>
-              <span className="material-symbols-outlined">alternate_email</span>
+        <div className="container footer-wrap">
+          <div className="footer-grid">
+            <div>
+              <h3>{sectionContent.footer.eventTitle}</h3>
+              <p>{sectionContent.footer.eventText}</p>
+              <div className="footer-icons">
+                <span className="material-symbols-outlined">share</span>
+                <span className="material-symbols-outlined">alternate_email</span>
+              </div>
+            </div>
+            <div>
+              <h3>{sectionContent.footer.departmentTitle}</h3>
+              <p>{sectionContent.footer.departmentText}</p>
             </div>
           </div>
-          <div>
-            <h3>{sectionContent.footer.departmentTitle}</h3>
-            <p>{sectionContent.footer.departmentText}</p>
-          </div>
-          <div>
-            <h3>{sectionContent.footer.linksTitle}</h3>
-            <ul>
-              {sectionContent.footer.links.map((link, index) => (
-                <li key={`footer-link-${index}`}>{link}</li>
-              ))}
-            </ul>
+
+          <div className="footer-contact">
+            <h3>{sectionContent.footer.contactTitle}</h3>
+            <div className="footer-contact-row">
+              {(sectionContent.footer.contactGroups ?? []).flatMap((group) =>
+                (group.people ?? []).map((person, personIndex) => (
+                  <div
+                    className="footer-contact-person"
+                    key={`${group.title}-${person.name}-${personIndex}`}
+                  >
+                    <p className="footer-contact-role">{group.title}</p>
+                    <p className="footer-contact-name">{person.name}</p>
+                    {person.contact ? (
+                      <p className="footer-contact-phone">
+                        <span className="material-symbols-outlined" aria-hidden="true">
+                          call
+                        </span>
+                        <a href={`tel:${person.contact.replace(/\s+/g, '')}`}>{person.contact}</a>
+                      </p>
+                    ) : null}
+                  </div>
+                )),
+              )}
+            </div>
           </div>
         </div>
       </footer>
@@ -1886,7 +2367,9 @@ function App() {
           <div className="registration-modal" onClick={(event) => event.stopPropagation()}>
             <div className="registration-modal-head">
               <h2 id="registration-modal-title">
-                {content.registration?.modalTitle || 'Registration Form'}
+                {registrationStep === 1
+                  ? content.registration?.modalTitle || 'Registration Form'
+                  : 'Join WhatsApp Group'}
               </h2>
               <button
                 type="button"
@@ -1898,71 +2381,124 @@ function App() {
               </button>
             </div>
 
-            <form className="registration-form" onSubmit={handleFormSubmit}>
-              {registrationSections.map((section) => (
-                <fieldset key={section.title}>
-                  <legend>{section.title}</legend>
-                  {section.fields.map((field) => (
-                    <label key={field.id}>
-                      {field.label}
-                      {field.type === 'select' ? (
-                        <select
-                          name={field.name}
-                          value={formData[field.name] ?? ''}
-                          onChange={handleFieldChange}
-                          required={field.required}
-                        >
-                          <option value="">Select option</option>
-                          {(field.options ?? []).map((option, index) => (
-                            <option value={option} key={`${field.id}-option-${index}`}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : field.type === 'file' ? (
-                        <input
-                          type="file"
-                          name={field.name}
-                          accept="image/*"
-                          onChange={handleFieldChange}
-                          required={field.required}
-                        />
+            {registrationStep === 1 ? (
+              <form className="registration-form" onSubmit={handleRegistrationNext}>
+                {registrationSections.map((section) => (
+                  <fieldset key={section.title}>
+                    <legend>{section.title}</legend>
+                    {section.fields.map((field) =>
+                      field.type === 'checkbox' ? (
+                        <label key={field.id} className="registration-checkbox-label">
+                          <input
+                            type="checkbox"
+                            name={field.name}
+                            checked={Boolean(formData[field.name])}
+                            onChange={handleFieldChange}
+                            required={field.required}
+                          />
+                          <span>{field.label}</span>
+                        </label>
                       ) : (
-                        <input
-                          type={field.type || 'text'}
-                          name={field.name}
-                          value={formData[field.name] ?? ''}
-                          onChange={handleFieldChange}
-                          required={field.required}
-                        />
-                      )}
-                    </label>
-                  ))}
-                </fieldset>
-              ))}
+                        <label key={field.id}>
+                          <span className="registration-field-label">
+                            {field.label}
+                            {field.required ? <span className="registration-required"> *</span> : null}
+                          </span>
+                          {field.type === 'select' ? (
+                            <select
+                              name={field.name}
+                              value={formData[field.name] ?? ''}
+                              onChange={handleFieldChange}
+                              required={field.required}
+                            >
+                              <option value="">Select option</option>
+                              {(field.options ?? []).map((option, index) => (
+                                <option value={option} key={`${field.id}-option-${index}`}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          ) : field.type === 'file' ? (
+                            <input
+                              type="file"
+                              name={field.name}
+                              accept="image/*"
+                              onChange={handleFieldChange}
+                              required={field.required}
+                            />
+                          ) : (
+                            <input
+                              type={field.type || 'text'}
+                              name={field.name}
+                              value={formData[field.name] ?? ''}
+                              onChange={handleFieldChange}
+                              required={field.required}
+                            />
+                          )}
+                        </label>
+                      ),
+                    )}
+                  </fieldset>
+                ))}
 
-              <div className="registration-form-actions">
-                <button type="button" className="btn btn-ghost" onClick={closeRegistrationForm}>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`btn btn-primary registration-submit-btn ${isSubmittingRegistration ? 'is-loading' : ''}`}
-                  disabled={isSubmittingRegistration}
-                >
-                  {isSubmittingRegistration ? (
-                    <>
-                      <span className="registration-spinner" aria-hidden="true"></span>
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit'
-                  )}
-                </button>
+                <div className="registration-form-actions">
+                  <button type="button" className="btn btn-ghost" onClick={closeRegistrationForm}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary registration-submit-btn">
+                    Next
+                  </button>
+                </div>
+                {registrationSubmitError ? <p className="registration-error-text">{registrationSubmitError}</p> : null}
+              </form>
+            ) : (
+              <div className="registration-whatsapp-step">
+                <p className="registration-whatsapp-intro">
+                  Scan the QR code or use the link below to join the WhatsApp group.
+                </p>
+                <img
+                  className="registration-whatsapp-qr"
+                  src={whatsappQr}
+                  alt="QuBioDL WhatsApp group QR code"
+                />
+                <p className="registration-whatsapp-link-text">
+                  Follow this link to join my WhatsApp group:{' '}
+                  <a href={WHATSAPP_GROUP_URL} target="_blank" rel="noreferrer">
+                    {WHATSAPP_GROUP_URL}
+                  </a>
+                </p>
+                <div className="registration-form-actions">
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      setRegistrationSubmitError('')
+                      setRegistrationStep(1)
+                    }}
+                    disabled={isSubmittingRegistration}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-primary registration-submit-btn ${isSubmittingRegistration ? 'is-loading' : ''}`}
+                    disabled={isSubmittingRegistration}
+                    onClick={handleFormSubmit}
+                  >
+                    {isSubmittingRegistration ? (
+                      <>
+                        <span className="registration-spinner" aria-hidden="true"></span>
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit'
+                    )}
+                  </button>
+                </div>
+                {registrationSubmitMessage ? <p>{registrationSubmitMessage}</p> : null}
+                {registrationSubmitError ? <p className="registration-error-text">{registrationSubmitError}</p> : null}
               </div>
-              {registrationSubmitMessage ? <p>{registrationSubmitMessage}</p> : null}
-              {registrationSubmitError ? <p>{registrationSubmitError}</p> : null}
-            </form>
+            )}
           </div>
         </div>
       ) : null}

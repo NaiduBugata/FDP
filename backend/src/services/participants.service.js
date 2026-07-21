@@ -39,7 +39,7 @@ const mapExternalToCombined = (item) => ({
 const mapRegistrationToCombined = (item) => ({
 	...item,
 	_id: String(item?._id ?? ''),
-	_source: 'registration',
+	_source: 'new_registrations',
 	_sortKey: item?.createdAt ? new Date(item.createdAt).getTime() : 0,
 })
 
@@ -59,13 +59,13 @@ const getCombined = async () => {
 	// registrations first (desc by createdAt), then internal/external (asc by rowNumber)
 	combined.sort((a, b) => {
 		if (a._source === b._source) {
-			if (a._source === 'registration') {
+			if (a._source === 'new_registrations') {
 				return (b._sortKey || 0) - (a._sortKey || 0)
 			}
 			return (a._sortKey || 0) - (b._sortKey || 0)
 		}
-		if (a._source === 'registration') return -1
-		if (b._source === 'registration') return 1
+		if (a._source === 'new_registrations') return -1
+		if (b._source === 'new_registrations') return 1
 		if (a._source === 'internal_excel' && b._source === 'external_excel') return -1
 		if (a._source === 'external_excel' && b._source === 'internal_excel') return 1
 		return 0

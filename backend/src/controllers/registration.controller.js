@@ -135,7 +135,7 @@ const exportExcel = async (req, res, next) => {
 
 		const datePart = new Date().toISOString().slice(0, 10)
 		const scopePart = scope === 'all' ? 'all' : scope
-		const fileName = `registrations-${scopePart}-${datePart}.xlsx`
+		const fileName = `new-registrations-${scopePart}-${datePart}.xlsx`
 
 		res.setHeader(
 			'Content-Type',

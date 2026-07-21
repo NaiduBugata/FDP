@@ -78,10 +78,11 @@ const registrationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    collection: 'New_Registrations',
   },
 )
 
-const Registration = mongoose.model('Registration', registrationSchema)
+const Registration = mongoose.model('NewRegistration', registrationSchema)
 Registration.PARTICIPANT_TYPES = PARTICIPANT_TYPES
 
 module.exports = Registration

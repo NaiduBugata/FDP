@@ -1099,7 +1099,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                 Add Chief Patron
               </button>
 
-              <h3>Co-Patrons</h3>
+              <h3>Patrons</h3>
               <div className="admin-stack">
                 {content.committee.patrons.map((item, index) => (
                   <article className="admin-item" key={`patron-${index}`}>
@@ -1155,7 +1155,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                 Add Patron
               </button>
 
-              <h3>Programme Chairs</h3>
+              <h3>Programme Chair</h3>
               <div className="admin-stack">
                 {content.committee.programmeChairs.map((chair, index) => (
                   <article className="admin-item" key={`chair-${index}`}>
@@ -1697,7 +1697,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
                 <label>
-                  Co-Patrons Label
+                  Patrons Label
                   <input
                     type="text"
                     value={content.sections.committee.patronsLabel}
@@ -1705,7 +1705,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
                 <label>
-                  Programme Chairs Label
+                  Programme Chair Label
                   <input
                     type="text"
                     value={content.sections.committee.programmeChairsLabel}
@@ -1893,11 +1893,11 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
                 <label>
-                  Quick Links Heading
+                  Contact Heading
                   <input
                     type="text"
-                    value={content.sections.footer.linksTitle}
-                    onChange={(event) => updateSectionField('footer', 'linksTitle', event.target.value)}
+                    value={content.sections.footer.contactTitle || 'Contact'}
+                    onChange={(event) => updateSectionField('footer', 'contactTitle', event.target.value)}
                   />
                 </label>
                 <label>
@@ -1909,28 +1909,9 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
               </div>
-              <div className="admin-stack compact">
-                {content.sections.footer.links.map((item, index) => (
-                  <div className="admin-inline admin-inline-wide" key={`footer-link-${index}`}>
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(event) => updateSectionTextListItem('footer', 'links', index, event.target.value)}
-                      placeholder="Footer link text"
-                    />
-                    <button
-                      type="button"
-                      className="admin-danger"
-                      onClick={() => removeSectionListItem('footer', 'links', index)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button type="button" className="admin-add" onClick={() => addSectionTextListItem('footer', 'links', 'New Link')}>
-                Add Footer Link
-              </button>
+              <p className="admin-helper-text">
+                Footer contact details show Convener and Co-Conveners with phone numbers on the website.
+              </p>
             </div>
           </section>
         </div>
