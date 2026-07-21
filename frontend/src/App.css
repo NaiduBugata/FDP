@@ -1026,6 +1026,16 @@
   object-position: 78% 22%;
 }
 
+.committee-photo-full {
+  object-fit: cover;
+  object-position: center center;
+}
+
+.committee-photo-srikrishna {
+  object-fit: cover;
+  object-position: center center;
+}
+
 .programme-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

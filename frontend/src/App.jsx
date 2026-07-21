@@ -9,10 +9,10 @@ import kapil from './assets/kapil-soni.png'
 import kumar from './assets/kumar.png'
 import vignanLogo from './assets/vignan logo updated.png'
 import chiefRathaiah from './assets/chief-rathaiah.png'
-import chiefSrikrishna from './assets/chief-srikrishna.png'
+import chiefSrikrishna from './assets/chief-srikrishna-full.png'
 import chiefMeghana from './assets/chief-meghana.png'
 import patronSubbaRao from './assets/patron-subba-rao.png'
-import patronKishore from './assets/patron-kishore.png'
+import patronKishore from './assets/patron-krishna-kishore.png'
 import patronPmvRao from './assets/patron-pmv-rao.png'
 import convenerSunil from './assets/convener-sunil.png'
 import coConvenerGandhi from './assets/co-convener-gandhi.png'
@@ -21,7 +21,7 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v34'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v41'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
   'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
@@ -1099,7 +1099,7 @@ const defaultContent = {
         image: patronSubbaRao,
       },
       {
-        name: 'Prof. K.V.K. Kishore',
+        name: 'Prof. K.V. Krishna Kishore',
         details: 'Vice Chancellor, VFSTR',
         image: patronKishore,
       },
@@ -1206,7 +1206,22 @@ const buildContentFromSaved = (saved = {}) => {
             /rathaiah/i,
           ),
           defaultContent.committee.chiefPatrons,
-        ),
+        ).map((member) => {
+          if (/srikrishna|devarayulu/i.test(String(member.name ?? ''))) {
+            const match = defaultContent.committee.chiefPatrons.find((item) =>
+              /srikrishna|devarayulu/i.test(String(item.name ?? '')),
+            )
+            return match
+              ? {
+                  ...member,
+                  name: match.name,
+                  details: match.details,
+                  image: match.image,
+                }
+              : member
+          }
+          return member
+        }),
         patrons: mergeCommitteeMemberDefaults(
           normalizeNamedCommitteeGroup(
             restSaved.committee?.patrons,
@@ -1214,7 +1229,22 @@ const buildContentFromSaved = (saved = {}) => {
             /subba\s*rao/i,
           ),
           defaultContent.committee.patrons,
-        ),
+        ).map((member) => {
+          if (/kishore/i.test(String(member.name ?? ''))) {
+            const match = defaultContent.committee.patrons.find((item) =>
+              /kishore/i.test(String(item.name ?? '')),
+            )
+            return match
+              ? {
+                  ...member,
+                  name: match.name,
+                  details: match.details,
+                  image: match.image || member.image,
+                }
+              : member
+          }
+          return member
+        }),
         programmeChairs: Array.isArray(restSaved.committee?.programmeChairs)
           ? restSaved.committee.programmeChairs
           : defaultContent.committee.programmeChairs,
@@ -2145,7 +2175,7 @@ function App() {
                             /rathaiah/i.test(member.name)
                               ? ' committee-photo-up'
                               : /srikrishna|devarayulu/i.test(member.name)
-                                ? ' committee-photo-left'
+                                ? ' committee-photo-srikrishna'
                                 : ''
                           }`}
                           src={member.image}
@@ -2164,7 +2194,15 @@ function App() {
                 <div className="convener-grid">
                   {content.committee.patrons.map((member, index) => (
                     <article className="committee-contact-card committee-profile-card" key={`${member.name}-${index}`}>
-                      {member.image ? <img className="committee-photo" src={member.image} alt={member.name} /> : null}
+                      {member.image ? (
+                        <img
+                          className={`committee-photo${
+                            /kishore/i.test(member.name) ? ' committee-photo-full' : ''
+                          }`}
+                          src={member.image}
+                          alt={member.name}
+                        />
+                      ) : null}
                       <p className="committee-name">{member.name}</p>
                       {member.details ? <p className="committee-role">{member.details}</p> : null}
                     </article>
