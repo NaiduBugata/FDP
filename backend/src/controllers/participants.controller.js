@@ -23,10 +23,10 @@ const exportCombinedExcel = async (req, res, next) => {
 			{ header: 'Email', key: 'emailId', width: 28 },
 			{ header: 'Designation', key: 'designation', width: 24 },
 			{ header: 'Institution', key: 'institution', width: 30 },
-			{ header: 'Participant Type', key: 'participantType', width: 18 },
+			{ header: 'Participant Type', key: 'participantType', width: 28 },
 			{ header: 'Mode', key: 'mode', width: 12 },
+			{ header: 'APAAR Id', key: 'apaarId', width: 20 },
 			{ header: 'Declaration', key: 'declaration', width: 14 },
-			{ header: 'Signature', key: 'signature', width: 20 },
 			{ header: 'Submitted At', key: 'submittedAt', width: 24 },
 		]
 
@@ -44,8 +44,8 @@ const exportCombinedExcel = async (req, res, next) => {
 				institution: item.institution || '',
 				participantType: item.participantType || '',
 				mode: item.mode || '',
+				apaarId: item.apaarId || '',
 				declaration: item.declaration || '',
-				signature: item.signature || '',
 				submittedAt: item.createdAt ? new Date(item.createdAt).toISOString() : '',
 			})
 			row.alignment = { vertical: 'middle', wrapText: true }

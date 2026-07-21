@@ -1,5 +1,12 @@
 const mongoose = require('mongoose')
 
+const PARTICIPANT_TYPES = [
+  'Faculty',
+  'Researchers',
+  'Ph.D. Scholars',
+  'Clinicians & Industry Persons',
+]
+
 const registrationSchema = new mongoose.Schema(
   {
     fullName: {
@@ -44,6 +51,13 @@ const registrationSchema = new mongoose.Schema(
       required: true,
       enum: ['Online', 'Offline'],
     },
+    apaarId: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: '',
+    },
+    // Kept for older records only; new registrations no longer collect photos.
     passportPhoto: {
       type: String,
       trim: true,
@@ -54,11 +68,12 @@ const registrationSchema = new mongoose.Schema(
       required: true,
       enum: ['Yes', 'No'],
     },
+    // Kept for older records only; new registrations no longer collect signatures.
     signature: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 120,
+      default: '',
     },
   },
   {
@@ -66,4 +81,7 @@ const registrationSchema = new mongoose.Schema(
   },
 )
 
-module.exports = mongoose.model('Registration', registrationSchema)
+const Registration = mongoose.model('Registration', registrationSchema)
+Registration.PARTICIPANT_TYPES = PARTICIPANT_TYPES
+
+module.exports = Registration

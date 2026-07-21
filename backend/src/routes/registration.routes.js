@@ -4,27 +4,7 @@ const { body, param, validationResult } = require('express-validator')
 const registrationController = require('../controllers/registration.controller')
 const authMiddleware = require('../middlewares/auth.middleware')
 const adminMiddleware = require('../middlewares/admin.middleware')
-
-const MAX_PHOTO_BYTES = 3 * 1024 * 1024
-
-const isPassportPhotoWithinLimit = (value = '') => {
-	if (!value) {
-		return true
-	}
-
-	if (typeof value !== 'string') {
-		return false
-	}
-
-	const match = value.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/)
-	if (!match) {
-		return false
-	}
-
-	const base64Payload = match[1]
-	const estimatedBytes = Math.floor((base64Payload.length * 3) / 4)
-	return estimatedBytes <= MAX_PHOTO_BYTES
-}
+const { PARTICIPANT_TYPES } = require('../models/registration.model')
 
 const router = express.Router()
 
@@ -52,14 +32,13 @@ router.post(
 		body('emailId').isEmail().withMessage('Valid email is required'),
 		body('designation').trim().notEmpty().withMessage('Designation is required'),
 		body('institution').trim().notEmpty().withMessage('Institution is required'),
-		body('participantType').trim().notEmpty().withMessage('Participant type is required'),
+		body('participantType')
+			.trim()
+			.isIn(PARTICIPANT_TYPES)
+			.withMessage(`Participant type must be one of: ${PARTICIPANT_TYPES.join(', ')}`),
 		body('mode').isIn(['Online', 'Offline']).withMessage('Mode must be Online or Offline'),
-		body('passportPhoto')
-			.optional({ checkFalsy: true })
-			.custom((value) => isPassportPhotoWithinLimit(value))
-			.withMessage('Passport photo must be a valid image and 3MB or smaller'),
+		body('apaarId').optional({ checkFalsy: true }).trim().isLength({ max: 120 }).withMessage('APAAR Id is too long'),
 		body('declaration').isIn(['Yes', 'No']).withMessage('Declaration must be Yes or No'),
-		body('signature').trim().notEmpty().withMessage('Signature is required'),
 	],
 	validateRequest,
 	registrationController.create,
@@ -72,6 +51,12 @@ router.put(
 		param('id').isMongoId().withMessage('Invalid ID'),
 		body('emailId').optional().isEmail().withMessage('Valid email is required'),
 		body('mode').optional().isIn(['Online', 'Offline']).withMessage('Mode must be Online or Offline'),
+		body('participantType')
+			.optional()
+			.trim()
+			.notEmpty()
+			.withMessage('Participant type cannot be empty'),
+		body('apaarId').optional({ checkFalsy: true }).trim().isLength({ max: 120 }).withMessage('APAAR Id is too long'),
 		body('declaration').optional().isIn(['Yes', 'No']).withMessage('Declaration must be Yes or No'),
 	],
 	validateRequest,

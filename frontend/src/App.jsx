@@ -11,6 +11,7 @@ import vignanLogo from './assets/vignan logo updated.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v5'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const DEFAULT_API_BASE_URL = import.meta.env.PROD
 	? 'https://fdp-r80r.onrender.com'
@@ -44,6 +45,13 @@ const parseJwtPayload = (token = '') => {
     return null
   }
 }
+const PARTICIPANT_TYPE_OPTIONS = [
+  'Faculty',
+  'Researchers',
+  'Ph.D. Scholars',
+  'Clinicians & Industry Persons',
+]
+
 const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'full-name',
@@ -94,10 +102,10 @@ const DEFAULT_REGISTRATION_FIELDS = [
     id: 'participant-type',
     name: 'participantType',
     label: 'Participant Type',
-    type: 'text',
+    type: 'select',
     required: true,
     section: '3. Participation',
-    options: [],
+    options: PARTICIPANT_TYPE_OPTIONS,
   },
   {
     id: 'mode',
@@ -109,12 +117,12 @@ const DEFAULT_REGISTRATION_FIELDS = [
     options: ['Online', 'Offline'],
   },
   {
-    id: 'passport-photo',
-    name: 'passportPhoto',
-    label: 'Passport Size Photo (Attach)',
-    type: 'file',
-    required: true,
-    section: '4. Upload',
+    id: 'apaar-id',
+    name: 'apaarId',
+    label: 'APAAR Id (Optional)',
+    type: 'text',
+    required: false,
+    section: '4. Additional Info',
     options: [],
   },
   {
@@ -125,15 +133,6 @@ const DEFAULT_REGISTRATION_FIELDS = [
     required: true,
     section: '5. Declaration',
     options: ['Yes', 'No'],
-  },
-  {
-    id: 'signature',
-    name: 'signature',
-    label: 'Signature',
-    type: 'text',
-    required: true,
-    section: '5. Declaration',
-    options: [],
   },
 ]
 const DEFAULT_NAVBAR_LINKS = [
@@ -236,9 +235,9 @@ const DEFAULT_SECTION_CONTENT = {
   committee: {
     heading: 'Organizing Committee',
     chiefPatronsLabel: 'Chief Patrons',
-    patronsLabel: 'Patrons',
+    patronsLabel: 'Co-Patrons',
     programmeChairsLabel: 'Programme Chairs',
-    convenersLabel: 'Convener & Co-Convener',
+    convenersLabel: 'Convener & Co-Conveners',
   },
   audience: {
     heading: 'Who Should Attend?',
@@ -246,7 +245,7 @@ const DEFAULT_SECTION_CONTENT = {
       { icon: 'school', label: 'Faculty' },
       { icon: 'psychology', label: 'Researchers' },
       { icon: 'experiment', label: 'Ph.D. Scholars' },
-      { icon: 'stethoscope', label: 'Clinicians' },
+      { icon: 'stethoscope', label: 'Clinicians & Industry Persons' },
     ],
     certificationTitle: 'Certification Requirements',
     certificationText:
@@ -261,9 +260,9 @@ const DEFAULT_SECTION_CONTENT = {
     note: 'Registration link is valid for first 100 eligible participants.',
   },
   schedule: {
-    heading: 'FDP Timeline Overview',
+    heading: 'Program Schedule (27th - 31st July 2026)',
     buttonText: 'Download PDF Schedule',
-    note: '... and more detailed sessions across the 5 days.',
+    note: '',
   },
   footer: {
     eventTitle: 'QuBioDL 2K26',
@@ -344,13 +343,27 @@ const normalizeSections = (sections) => {
     committee: {
       ...DEFAULT_SECTION_CONTENT.committee,
       ...(source.committee ?? {}),
+      patronsLabel:
+        !source.committee?.patronsLabel ||
+        String(source.committee.patronsLabel).trim().toLowerCase() === 'patrons'
+          ? 'Co-Patrons'
+          : source.committee.patronsLabel,
+      convenersLabel:
+        !source.committee?.convenersLabel ||
+        String(source.committee.convenersLabel).trim().toLowerCase() === 'convener & co-convener'
+          ? 'Convener & Co-Conveners'
+          : source.committee.convenersLabel,
     },
     audience: {
       ...DEFAULT_SECTION_CONTENT.audience,
       ...(source.audience ?? {}),
       items:
         Array.isArray(source.audience?.items) && source.audience.items.length > 0
-          ? source.audience.items
+          ? source.audience.items.map((item) =>
+              String(item?.label ?? '').trim().toLowerCase() === 'clinicians'
+                ? { ...item, label: 'Clinicians & Industry Persons' }
+                : item,
+            )
           : DEFAULT_SECTION_CONTENT.audience.items,
     },
     cta: {
@@ -360,6 +373,18 @@ const normalizeSections = (sections) => {
     schedule: {
       ...DEFAULT_SECTION_CONTENT.schedule,
       ...(source.schedule ?? {}),
+      heading:
+        !source.schedule?.heading ||
+        ['fdp timeline overview', 'seminar timeline overview'].includes(
+          String(source.schedule.heading).trim().toLowerCase(),
+        )
+          ? DEFAULT_SECTION_CONTENT.schedule.heading
+          : source.schedule.heading,
+      note:
+        !source.schedule?.note ||
+        String(source.schedule.note).toLowerCase().includes('more detailed sessions')
+          ? DEFAULT_SECTION_CONTENT.schedule.note
+          : source.schedule.note,
     },
     footer: {
       ...DEFAULT_SECTION_CONTENT.footer,
@@ -374,6 +399,20 @@ const normalizeSections = (sections) => {
 
 const normalizeRegistrationFields = (fields) => {
   if (!Array.isArray(fields) || fields.length === 0) {
+    return DEFAULT_REGISTRATION_FIELDS
+  }
+
+  const fieldNames = new Set(fields.map((field) => String(field?.name ?? '').trim()))
+  const hasLegacyUploadOrSignature =
+    fieldNames.has('passportPhoto') || fieldNames.has('signature') || !fieldNames.has('apaarId')
+  const participantTypeField = fields.find((field) => field?.name === 'participantType')
+  const hasLegacyParticipantType =
+    !participantTypeField ||
+    participantTypeField.type !== 'select' ||
+    !Array.isArray(participantTypeField.options) ||
+    participantTypeField.options.length === 0
+
+  if (hasLegacyUploadOrSignature || hasLegacyParticipantType) {
     return DEFAULT_REGISTRATION_FIELDS
   }
 
@@ -400,9 +439,8 @@ const buildLegacyRegistrationFields = (labels, customFields) => {
       institution: 'institution',
       participantType: 'participantType',
       mode: 'mode',
-      passportPhoto: 'passportPhoto',
+      apaarId: 'apaarId',
       declaration: 'declaration',
-      signature: 'signature',
     }
 
     const legacyKey = legacyKeyMap[field.name]
@@ -473,10 +511,162 @@ const normalizeConveners = (conveners) => {
       seenNames.add(normalizedName)
     }
 
-    uniqueConveners.push(item)
+    const title = String(item?.title ?? '').trim()
+    const titleKey = title.toLowerCase()
+    const normalizedTitle =
+      titleKey === 'co-convener' || titleKey === 'co-convenor' ? 'Co-Conveners' : title
+
+    uniqueConveners.push({
+      ...item,
+      title: normalizedTitle,
+    })
   }
 
-  return uniqueConveners
+  const mainConvener = []
+  const coConveners = []
+  const others = []
+
+  for (const item of uniqueConveners) {
+    const titleKey = String(item?.title ?? '').trim().toLowerCase()
+    if (titleKey === 'convener') {
+      mainConvener.push(item)
+    } else if (titleKey === 'co-conveners') {
+      coConveners.push(item)
+    } else {
+      others.push(item)
+    }
+  }
+
+  const gandhi = coConveners.filter((item) =>
+    (item?.name ?? '').toLowerCase().replace(/\s+/g, '').includes('gandhi'),
+  )
+  const mondal = coConveners.filter((item) =>
+    (item?.name ?? '').toLowerCase().replace(/\s+/g, '').includes('mondal'),
+  )
+  const remainingCo = coConveners.filter((item) => {
+    const key = (item?.name ?? '').toLowerCase().replace(/\s+/g, '')
+    return !key.includes('gandhi') && !key.includes('mondal')
+  })
+
+  return [...mainConvener, ...gandhi, ...mondal, ...remainingCo, ...others]
+}
+
+const DEFAULT_PROGRAM_SCHEDULE = [
+  {
+    dayTitle: 'DAY 1 : Foundations of Quantum & Imaging',
+    date: '27-07-2026',
+    sessions: [
+      { time: '9:00 AM – 10:00 AM', title: 'Inaugural Ceremony' },
+      { time: '10:00 AM – 11:00 AM', title: 'Keynote: "Quantum Computing in Healthcare"' },
+      { time: '11:00 AM - 11:30 AM', title: 'Refreshments' },
+      {
+        time: '11:30 AM – 1:00 PM',
+        title: 'Lecture: Fundamentals of Quantum Computing (Qubits, Superposition, Entanglement)',
+      },
+      { time: '1:00 PM – 2:00 PM', title: 'Lunch' },
+      {
+        time: '2:00 PM – 3:45 PM',
+        title:
+          'Lecture & Discussion : Basics of Biomedical Image Processing, Image modalities, Interactive Q&A',
+      },
+      { time: '3:45 PM - 4:15 PM', title: 'Hi-Tea' },
+    ],
+  },
+  {
+    dayTitle: 'DAY 2 : Deep Learning for Imaging',
+    date: '28-07-2026',
+    sessions: [
+      {
+        time: '9:00 AM – 10:30 AM',
+        title:
+          'Lecture: Deep Learning and Foundation Models for Medical Image Analysis: CNNs, GANs, Vision Transformers (ViTs), etc',
+      },
+      { time: '10:30AM – 11:00 AM', title: 'Refreshments' },
+      {
+        time: '11:00 AM – 12:30 PM',
+        title:
+          'Deep Learning-Based Diagnosis of Chest Infections from Chest X-ray Images; Autism Spectrum Disorder Detection Using Facial Expression Recognition (FER)',
+      },
+      { time: '12:30 PM – 1:30 PM', title: 'Lunch' },
+      { time: '1:30 PM – 3:45 PM', title: 'Workshop : Hands-on: Deep Learning models for Imaging.' },
+      { time: '3:45 PM - 4:15 PM', title: 'Hi-Tea' },
+    ],
+  },
+  {
+    dayTitle: 'DAY 3 : Quantum–DL Integration',
+    date: '29-07-2026',
+    sessions: [
+      {
+        time: '9:00 AM – 10:30 AM',
+        title: "Lecture: Quantum Algorithms for Imaging (Grover's, VQE, QAOA)",
+      },
+      { time: '10:30AM – 11:00 AM', title: 'Refreshments' },
+      { time: '11:00 AM – 12:30 PM', title: 'Demo : Hybrid Quantum–Classical Workflows' },
+      { time: '12:30 PM – 1:30 PM', title: 'Lunch' },
+      {
+        time: '1:30 PM – 3:45 PM',
+        title: 'Workshop : Hands-on: IBM Quantum Experience & Qiskit for Biomedical Imaging',
+      },
+      { time: '3:45 PM - 4:15 PM', title: 'Hi-Tea' },
+    ],
+  },
+  {
+    dayTitle: 'DAY 4 : Applications & Ethics',
+    date: '30-07-2026',
+    sessions: [
+      {
+        time: '9:00 AM – 10:30 AM',
+        title:
+          'Lecture & Case Studies : Real-Time Applications in Healthcare Imaging & Clinical Deployments',
+      },
+      { time: '10:30AM – 11:00 AM', title: 'Refreshments' },
+      { time: '11:00 AM – 12:30 PM', title: 'Lecture & Case Studies' },
+      { time: '12:30 PM – 1:30 PM', title: 'Lunch' },
+      { time: '1:30 PM – 3:45 PM', title: 'Workshop : Microsoft Quantum Development Kit' },
+      { time: '3:45 PM - 4:15 PM', title: 'Hi-Tea' },
+    ],
+  },
+  {
+    dayTitle: 'DAY 5 : Collaboration & Future Directions',
+    date: '31-07-2026',
+    sessions: [
+      { time: '9:00 AM – 10:30 AM', title: 'Lecture : Future Trends in Quantum Healthcare' },
+      { time: '10:30AM – 11:00 AM', title: 'Refreshments' },
+      { time: '11:00 AM – 12:30 PM', title: 'Collaboration : Academia–Industry Collaboration' },
+      { time: '12:30 PM – 1:30 PM', title: 'Lunch' },
+      {
+        time: '1:30 PM – 3:45 PM',
+        title: 'Participant reflections & Closing : Valedictory Session & Certificate Distribution',
+      },
+      { time: '3:45 PM - 4:15 PM', title: 'Hi-Tea' },
+    ],
+  },
+]
+
+const hasUsableProgramSessions = (schedule) =>
+  Array.isArray(schedule) &&
+  schedule.some(
+    (day) =>
+      Array.isArray(day?.sessions) &&
+      day.sessions.some((session) => Boolean(String(session?.time || session?.title || '').trim())),
+  )
+
+const normalizeProgramSchedule = (schedule) => {
+  // Legacy timeline items ({ title, text }) or empty day shells must not win over the PDF schedule.
+  if (!hasUsableProgramSessions(schedule)) {
+    return DEFAULT_PROGRAM_SCHEDULE
+  }
+
+  return schedule.map((day) => ({
+    dayTitle: day.dayTitle || day.title || 'Program Day',
+    date: day.date || '',
+    sessions: (day.sessions || [])
+      .map((session) => ({
+        time: session.time || '',
+        title: session.title || session.text || '',
+      }))
+      .filter((session) => session.time || session.title),
+  }))
 }
 
 const defaultContent = {
@@ -490,20 +680,7 @@ const defaultContent = {
     modalTitle: 'Seminar Registration Form',
     formFields: DEFAULT_REGISTRATION_FIELDS,
   },
-  schedule: [
-    {
-      title: 'Day 1: Genesis',
-      text: 'Inauguration, Introduction to Quantum Computing & Linear Algebra.',
-    },
-    {
-      title: 'Day 2: Qubit Logic',
-      text: 'Quantum Gates, Circuits and IBM Qiskit hands-on sessions.',
-    },
-    {
-      title: 'Day 3: Deep Vision',
-      text: 'Medical Image Processing & Advanced CNN architectures for healthcare.',
-    },
-  ],
+  schedule: DEFAULT_PROGRAM_SCHEDULE,
   speakers: [
     {
       name: 'Prof. R. Balasubramanian',
@@ -590,7 +767,15 @@ const defaultContent = {
         image: '',
       },
       {
-        title: 'Co-Convener',
+        title: 'Co-Conveners',
+        name: 'Mr. O. Gandhi',
+        role: 'Assistant Professor, CSE',
+        contact: '',
+        email: '',
+        image: '',
+      },
+      {
+        title: 'Co-Conveners',
         name: 'Mr. Sourav Mondal',
         role: 'Assistant Professor, CSE',
         contact: '+91-9831422643',
@@ -615,7 +800,7 @@ const buildContentFromSaved = (saved = {}) => {
           buildLegacyRegistrationFields(saved.registration?.labels, saved.registration?.customFields),
         )
 
-    const { loader: _ignoredLoader, ...restSaved } = saved
+    const { loader: _ignoredLoader, schedule: _ignoredSchedule, ...restSaved } = saved
 
     return {
       ...defaultContent,
@@ -631,7 +816,7 @@ const buildContentFromSaved = (saved = {}) => {
         links: normalizeNavbarLinks(restSaved.navbar?.links),
         logos: normalizeNavbarLogos(restSaved.navbar?.logos),
       },
-      schedule: Array.isArray(restSaved.schedule) ? restSaved.schedule : defaultContent.schedule,
+      schedule: normalizeProgramSchedule(saved.schedule),
       speakers: Array.isArray(restSaved.speakers) ? restSaved.speakers : defaultContent.speakers,
       committee: {
         ...defaultContent.committee,
@@ -658,13 +843,40 @@ const buildContentFromSaved = (saved = {}) => {
   }
 }
 
-const getInitialContent = () => defaultContent
+const readCachedSiteContent = () => {
+  try {
+    const raw = window.localStorage.getItem(SITE_CONTENT_CACHE_KEY)
+    if (!raw) {
+      return null
+    }
+
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') {
+      return null
+    }
+
+    return buildContentFromSaved(parsed)
+  } catch {
+    return null
+  }
+}
+
+const writeCachedSiteContent = (contentValue) => {
+  try {
+    const { loader: _ignoredLoader, ...contentWithoutLoader } = contentValue ?? {}
+    window.localStorage.setItem(SITE_CONTENT_CACHE_KEY, JSON.stringify(contentWithoutLoader))
+  } catch {
+    // Ignore quota / private-mode failures.
+  }
+}
 
 function App() {
   const [routeHash, setRouteHash] = useState(() => window.location.hash)
-  const [content, setContent] = useState(getInitialContent)
+  const cachedContent = useMemo(() => readCachedSiteContent(), [])
+  const [content, setContent] = useState(() => cachedContent ?? defaultContent)
   const [contentSectionId, setContentSectionId] = useState(null)
-  const [isContentBootstrapped, setIsContentBootstrapped] = useState(false)
+  const [isContentBootstrapped, setIsContentBootstrapped] = useState(Boolean(cachedContent))
+  const [allowContentSave, setAllowContentSave] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
     () => window.localStorage.getItem(ADMIN_AUTH_STORAGE_KEY) === 'true',
   )
@@ -687,9 +899,8 @@ function App() {
     institution: '',
     participantType: '',
     mode: '',
-    passportPhoto: null,
+    apaarId: '',
     declaration: '',
-    signature: '',
   })
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false)
   const [registrationSubmitMessage, setRegistrationSubmitMessage] = useState('')
@@ -726,7 +937,13 @@ function App() {
 
     const loadContentFromDB = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/sections`)
+        const response = await fetch(`${API_BASE_URL}/sections`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
+        })
         if (!response.ok) {
           throw new Error('Failed to fetch content from database')
         }
@@ -736,11 +953,18 @@ function App() {
         const siteContentSection = sections.find((item) => item.key === SITE_CONTENT_KEY)
 
         if (siteContentSection?.content && isMounted) {
-          setContent(buildContentFromSaved(siteContentSection.content))
+          const nextContent = buildContentFromSaved(siteContentSection.content)
+          setContent(nextContent)
           setContentSectionId(siteContentSection._id)
+          writeCachedSiteContent(nextContent)
+          setAllowContentSave(true)
+        } else if (isMounted) {
+          // No server document yet — keep local defaults and allow first save to create it.
+          setAllowContentSave(true)
         }
       } catch (error) {
         console.error(error)
+        // Keep cached/default content visible; do not overwrite server on failed fetch.
       } finally {
         if (isMounted) {
           setIsContentBootstrapped(true)
@@ -756,7 +980,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!isContentBootstrapped) {
+    if (!isContentBootstrapped || !allowContentSave) {
       return undefined
     }
 
@@ -767,6 +991,8 @@ function App() {
     saveTimerRef.current = window.setTimeout(async () => {
       try {
         const { loader: _ignoredLoader, ...contentWithoutLoader } = content
+        writeCachedSiteContent(contentWithoutLoader)
+
         const requestBody = {
           key: SITE_CONTENT_KEY,
           title: 'Site Content',
@@ -781,8 +1007,10 @@ function App() {
             method: isUpdate ? 'PUT' : 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
             },
             body: JSON.stringify(requestBody),
+            cache: 'no-store',
           },
         )
 
@@ -806,7 +1034,7 @@ function App() {
         window.clearTimeout(saveTimerRef.current)
       }
     }
-  }, [content, contentSectionId, isContentBootstrapped])
+  }, [content, contentSectionId, isContentBootstrapped, allowContentSave])
 
   useEffect(() => {
     const normalizedConveners = normalizeConveners(content.committee.conveners)
@@ -883,19 +1111,6 @@ function App() {
     }))
   }
 
-  const fileToDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      if (!file) {
-        resolve('')
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
-      reader.onerror = () => reject(new Error('Failed to read passport photo'))
-      reader.readAsDataURL(file)
-    })
-
   const handleFormSubmit = async (event) => {
     event.preventDefault()
 
@@ -904,12 +1119,6 @@ function App() {
     setIsSubmittingRegistration(true)
 
     try {
-      if (formData.passportPhoto && formData.passportPhoto.size > 3 * 1024 * 1024) {
-        throw new Error('Passport photo must be 3MB or smaller.')
-      }
-
-      const passportPhotoData = await fileToDataUrl(formData.passportPhoto)
-
       const payload = {
         fullName: formData.fullName,
         mobileNumber: formData.mobileNumber,
@@ -918,9 +1127,8 @@ function App() {
         institution: formData.institution,
         participantType: formData.participantType,
         mode: formData.mode,
-        passportPhoto: passportPhotoData,
+        apaarId: formData.apaarId?.trim?.() ?? '',
         declaration: formData.declaration,
-        signature: formData.signature,
       }
 
       const response = await fetch(`${API_BASE_URL}/registrations`, {
@@ -948,9 +1156,8 @@ function App() {
         institution: '',
         participantType: '',
         mode: '',
-        passportPhoto: null,
+        apaarId: '',
         declaration: '',
-        signature: '',
       })
       window.setTimeout(() => {
         setIsRegisterOpen(false)
@@ -1051,13 +1258,13 @@ function App() {
     const footerReserve = 14
 
     const drawPageHeader = () => {
-      doc.setFillColor(8, 90, 112)
+      doc.setFillColor(11, 107, 107)
       doc.rect(0, 0, pageWidth, headerHeight, 'F')
 
       doc.setTextColor(255, 255, 255)
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(16)
-      doc.text('FDP Schedule', marginX, 12)
+      doc.setFontSize(14)
+      doc.text(sectionContent.schedule.heading || 'Program Schedule', marginX, 12)
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
@@ -1067,44 +1274,63 @@ function App() {
     let y = headerHeight + 10
     drawPageHeader()
 
-    if (content.schedule.length === 0) {
+    if (!Array.isArray(content.schedule) || content.schedule.length === 0) {
       doc.setTextColor(58, 74, 89)
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(11)
       doc.text('No schedule entries are available right now.', marginX, y)
     }
 
-    content.schedule.forEach((item, index) => {
-      const titleLines = doc.splitTextToSize(`${index + 1}. ${item.title || 'Schedule Item'}`, contentWidth - 12)
-      const descriptionLines = doc.splitTextToSize(item.text || '', contentWidth - 12)
-      const cardHeight = 8 + titleLines.length * 5 + 3 + descriptionLines.length * 4.8 + 6
+    content.schedule.forEach((day) => {
+      const dayLabel = [day.dayTitle, day.date].filter(Boolean).join('  ·  ')
+      const dayLines = doc.splitTextToSize(dayLabel || 'Program Day', contentWidth)
 
-      if (y + cardHeight > pageHeight - footerReserve) {
+      if (y + 18 > pageHeight - footerReserve) {
         doc.addPage()
         drawPageHeader()
         y = headerHeight + 10
       }
 
-      doc.setFillColor(245, 250, 255)
-      doc.setDrawColor(199, 219, 236)
-      doc.roundedRect(marginX, y, contentWidth, cardHeight, 2.5, 2.5, 'FD')
-
-      doc.setFillColor(8, 90, 112)
-      doc.roundedRect(marginX + 2, y + 2, 1.6, cardHeight - 4, 0.8, 0.8, 'F')
-
-      let textY = y + 7
-      doc.setTextColor(21, 52, 79)
+      doc.setTextColor(11, 107, 107)
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11.5)
-      doc.text(titleLines, marginX + 6, textY)
-      textY += titleLines.length * 5 + 1
+      doc.setFontSize(12)
+      doc.text(dayLines, marginX, y)
+      y += dayLines.length * 5.5 + 3
 
-      doc.setTextColor(66, 85, 102)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      doc.text(descriptionLines, marginX + 6, textY)
+      doc.setFillColor(11, 107, 107)
+      doc.rect(marginX, y, contentWidth, 8, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.text('Time', marginX + 3, y + 5.4)
+      doc.text('Session Title', marginX + 52, y + 5.4)
+      y += 8
 
-      y += cardHeight + 5
+      ;(day.sessions ?? []).forEach((session) => {
+        const timeLines = doc.splitTextToSize(session.time || '-', 44)
+        const titleLines = doc.splitTextToSize(session.title || '-', contentWidth - 52)
+        const rowHeight = Math.max(timeLines.length, titleLines.length) * 4.4 + 4
+
+        if (y + rowHeight > pageHeight - footerReserve) {
+          doc.addPage()
+          drawPageHeader()
+          y = headerHeight + 10
+        }
+
+        doc.setDrawColor(197, 208, 215)
+        doc.setFillColor(255, 255, 255)
+        doc.rect(marginX, y, contentWidth, rowHeight, 'FD')
+        doc.line(marginX + 48, y, marginX + 48, y + rowHeight)
+
+        doc.setTextColor(21, 32, 40)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.text(timeLines, marginX + 3, y + 4.5)
+        doc.text(titleLines, marginX + 52, y + 4.5)
+        y += rowHeight
+      })
+
+      y += 6
     })
 
     const totalPages = doc.getNumberOfPages()
@@ -1125,6 +1351,10 @@ function App() {
 
   const isSuperAdminPage = routeHash === '#superadmin'
   const isAdminPage = routeHash === '#admin'
+
+  if (!isContentBootstrapped) {
+    return <div className="content-boot" aria-busy="true" aria-live="polite" />
+  }
 
   if (isSuperAdminPage) {
     if (!isAdminAuthenticated) {
@@ -1320,7 +1550,10 @@ function App() {
         <section className="hero-section">
           <div className="hero-rings" aria-hidden="true"></div>
           <div className="container hero-content">
-            <p className="hero-brand">{navbarConfig.brand}</p>
+            <p className="hero-brand">
+              {navbarConfig.brand}
+              {navbarConfig.subBrand ? ` ${navbarConfig.subBrand}` : ''}
+            </p>
             <p className="hero-eyebrow">{sectionContent.hero.pill}</p>
             <h1>
               {sectionContent.hero.titlePrefix} <span>{sectionContent.hero.titleHighlight}</span>
@@ -1470,9 +1703,9 @@ function App() {
 
               <section className="committee-group">
                 <h3 className="section-label">{sectionContent.committee.patronsLabel}</h3>
-                <div className="committee-member-grid">
+                <div className="programme-grid">
                   {content.committee.patrons.map((member, index) => (
-                    <article className="committee-member-card" key={`${member.name}-${index}`}>
+                    <article className="card committee-text-card" key={`${member.name}-${index}`}>
                       {member.image ? <img className="committee-photo" src={member.image} alt={member.name} /> : null}
                       <p className="committee-name">{member.name}</p>
                       {member.details ? <p className="committee-role">{member.details}</p> : null}
@@ -1552,7 +1785,7 @@ function App() {
         </section>
 
         <section id="schedule" className="section section-soft">
-          <div className="container narrow">
+          <div className="container">
             <div className="timeline-head">
               <h2>{sectionContent.schedule.heading}</h2>
               <button className="timeline-btn" type="button" onClick={downloadSchedule}>
@@ -1560,15 +1793,53 @@ function App() {
                 {sectionContent.schedule.buttonText}
               </button>
             </div>
-            <div className="timeline">
-              {content.schedule.map((item, index) => (
-                <article className={index % 2 === 0 ? 'left' : 'right'} key={`${item.title}-${index}`}>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
+
+            <div className="program-schedule">
+              {content.schedule.map((day, dayIndex) => (
+                <article className="program-day-card" key={`${day.dayTitle}-${dayIndex}`}>
+                  <header className="program-day-header">
+                    <div className="program-day-heading">
+                      <span className="program-day-badge">Day {dayIndex + 1}</span>
+                      <h3>{day.dayTitle?.replace(/^DAY\s*\d+\s*:\s*/i, '') || day.dayTitle}</h3>
+                    </div>
+                    {day.date ? <span className="program-day-date">{day.date}</span> : null}
+                  </header>
+                  <div className="program-table-wrap">
+                    <table className="program-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Time</th>
+                          <th scope="col">Session Title</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(day.sessions ?? []).map((session, sessionIndex) => {
+                          const title = session.title || ''
+                          const isBreak = /^(refreshments|lunch|hi-tea)$/i.test(title.trim())
+                          return (
+                            <tr
+                              key={`${dayIndex}-${sessionIndex}-${session.time}`}
+                              className={isBreak ? 'is-break' : undefined}
+                            >
+                              <td>
+                                <span className="program-time">{session.time}</span>
+                              </td>
+                              <td>
+                                <span className="program-session-title">{title}</span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </article>
               ))}
             </div>
-            <p className="timeline-note">{sectionContent.schedule.note}</p>
+
+            {sectionContent.schedule.note ? (
+              <p className="timeline-note">{sectionContent.schedule.note}</p>
+            ) : null}
           </div>
         </section>
       </main>

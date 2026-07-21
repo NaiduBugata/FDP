@@ -254,6 +254,13 @@
   box-shadow: 0 2px 10px rgb(21 32 40 / 0.05);
 }
 
+.content-boot {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 100% -10%, rgb(11 107 107 / 0.08), transparent 55%),
+    #eef4f6;
+}
+
 .topbar-inner {
   min-height: 72px;
   display: flex;
@@ -507,23 +514,23 @@
 .hero-brand {
   margin: 0 0 0.65rem;
   font-family: var(--font-headline);
-  font-size: clamp(1.65rem, 3.6vw, 2.35rem);
+  font-size: clamp(2.05rem, 4.4vw, 2.95rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #fff;
 }
 
 .hero-eyebrow {
-  margin: 0 0 0.85rem;
-  font-size: 0.78rem;
+  margin: 0 0 0.95rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
   font-weight: 650;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: color-mix(in oklab, var(--primary-fixed) 88%, white);
 }
 
 .hero-content h1 {
-  font-size: clamp(2.35rem, 5.4vw, 3.85rem);
+  font-size: clamp(2.75rem, 6.2vw, 4.45rem);
   line-height: 1.08;
   margin: 0;
   font-family: var(--font-headline);
@@ -851,6 +858,25 @@
   margin: 0 0 1rem;
 }
 
+.committee-group .section-label {
+  text-align: center;
+  border-left: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.15rem;
+}
+
+.committee-group .section-label::after {
+  content: '';
+  width: 42px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
 .card h3 .material-symbols-outlined,
 .card-primary h3 .material-symbols-outlined {
   font-size: 18px;
@@ -929,12 +955,36 @@
   gap: 0.8rem;
 }
 
+.committee-member-grid.is-centered {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.committee-member-grid.is-centered .committee-member-card {
+  flex: 0 1 calc((100% - 1.6rem) / 3);
+  width: calc((100% - 1.6rem) / 3);
+  max-width: none;
+  text-align: left;
+}
+
 .committee-member-card {
   background: var(--surface-container-low);
   border: 1px solid color-mix(in oklab, var(--outline-variant) 55%, transparent);
   border-radius: var(--radius-sm);
   padding: 0.95rem;
-  text-align: center;
+  text-align: left;
+}
+
+.committee-photo {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-fixed);
+  margin: 0 0 0.6rem;
+  display: block;
 }
 
 .programme-grid {
@@ -945,15 +995,7 @@
 
 .committee-text-card {
   background: color-mix(in oklab, var(--surface-container-high) 70%, transparent);
-}
-
-.committee-photo {
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary-fixed);
-  margin-bottom: 0.6rem;
+  text-align: left;
 }
 
 .committee-name {
@@ -976,21 +1018,32 @@
 
 .convener-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem;
+  width: 100%;
 }
 
 .committee-contact-card {
   background: rgb(255 255 255 / 0.58);
   border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
   border-radius: 0.82rem;
-  padding: 0.9rem;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  word-break: break-word;
 }
 
 .committee-contact-card h4 {
   margin: 0 0 0.5rem;
   color: var(--primary);
   font-size: 1rem;
+  text-align: center;
+}
+
+.committee-contact-card .committee-photo {
+  margin-inline: auto;
 }
 
 .committee-contact-card p {
@@ -1240,77 +1293,157 @@
   font-size: 18px;
 }
 
-.timeline {
-  position: relative;
-  margin-top: 1.4rem;
+.program-schedule {
+  margin-top: 1.5rem;
   display: grid;
-  gap: 1.3rem;
-  padding-bottom: 0.4rem;
+  gap: 1.25rem;
 }
 
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  transform: translateX(-50%);
-  background: color-mix(in oklab, var(--outline-variant) 80%, transparent);
+.program-day-card {
+  background: var(--surface-container-lowest);
+  border: 1px solid color-mix(in oklab, var(--outline-variant) 60%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
-.timeline article {
-  width: 48%;
-  background: transparent;
-  border: 0;
-  padding: 0.1rem 0.4rem;
-  position: relative;
+.program-day-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 1rem 1.2rem;
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in oklab, var(--primary) 14%, var(--surface-container-lowest)),
+      color-mix(in oklab, var(--secondary) 8%, var(--surface-container-lowest))
+    );
+  border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 45%, transparent);
 }
 
-.timeline h3 {
-  margin: 0 0 0.35rem;
-  color: var(--primary);
+.program-day-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  min-width: 0;
 }
 
-.timeline p {
-  margin: 0;
-  font-size: 0.88rem;
-}
-
-.timeline article::after {
-  content: '';
-  position: absolute;
-  top: 12px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+.program-day-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.2rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: var(--radius-sm);
   background: var(--primary);
-  border: 2px solid var(--surface-container-lowest);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.timeline article.right {
-  margin-left: auto;
+.program-day-header h3 {
+  margin: 0;
+  font-family: var(--font-headline);
+  font-size: clamp(1rem, 1.6vw, 1.12rem);
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+.program-day-date {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--primary) 12%, white);
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.program-table-wrap {
+  overflow-x: auto;
+}
+
+.program-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.program-table th,
+.program-table td {
+  padding: 0.78rem 1.15rem;
   text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 42%, transparent);
 }
 
-.timeline article.left {
-  text-align: right;
+.program-table thead th {
+  background: color-mix(in oklab, var(--primary) 92%, black);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.timeline article.left::after {
-  right: -13px;
+.program-table th:first-child,
+.program-table td:first-child {
+  width: 230px;
 }
 
-.timeline article.right::after {
-  left: -13px;
-  background: var(--secondary);
+.program-time {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.program-session-title {
+  display: block;
+  color: var(--on-surface);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.program-table tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--primary) 3.5%, transparent);
+}
+
+.program-table tbody tr.is-break {
+  background: color-mix(in oklab, var(--secondary) 8%, transparent);
+}
+
+.program-table tbody tr.is-break .program-session-title {
+  font-weight: 650;
+  color: var(--on-surface-variant);
+  font-style: italic;
+}
+
+.program-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.program-table tbody tr:hover {
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
 }
 
 .timeline-note {
   text-align: center;
   font-style: italic;
-  margin-top: 0.4rem;
+  margin-top: 1rem;
   font-size: 0.88rem;
+  color: var(--on-surface-variant);
 }
 
 .footer {
@@ -1720,8 +1853,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .programme-grid,
-  .convener-grid {
+  .programme-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1731,6 +1863,11 @@
 
   .committee-member-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .committee-member-grid.is-centered .committee-member-card {
+    flex: 0 1 calc((100% - 0.8rem) / 2);
+    width: calc((100% - 0.8rem) / 2);
   }
 
   .speaker-profile {
@@ -1785,7 +1922,7 @@
   }
 
   .hero-content h1 {
-    font-size: clamp(2.1rem, 9vw, 2.85rem);
+    font-size: clamp(2.4rem, 10vw, 3.2rem);
   }
 
   .hero-subtitle {
@@ -1793,7 +1930,7 @@
   }
 
   .hero-brand {
-    font-size: 1.55rem;
+    font-size: 1.85rem;
   }
 
   .hero-meta-line {
@@ -1806,7 +1943,10 @@
   }
 
   .two-col,
-  .programme-grid,
+  .programme-grid {
+    grid-template-columns: 1fr;
+  }
+
   .convener-grid {
     grid-template-columns: 1fr;
   }
@@ -1830,6 +1970,11 @@
 
   .committee-member-grid {
     grid-template-columns: 1fr;
+  }
+
+  .committee-member-grid.is-centered .committee-member-card {
+    flex: 1 1 100%;
+    width: 100%;
   }
 
   .speaker-profile {
@@ -1856,13 +2001,38 @@
     min-width: 148px;
   }
 
+  .program-day-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+
   .timeline-head {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .timeline article {
-    width: 47%;
+  .program-table th,
+  .program-table td {
+    padding: 0.65rem 0.8rem;
+  }
+
+  .program-table th:first-child,
+  .program-table td:first-child {
+    width: 36%;
+  }
+
+  .program-time {
+    white-space: normal;
+    font-size: 0.82rem;
+  }
+
+  .program-session-title {
+    font-size: 0.88rem;
+  }
+
+  .program-table thead th {
+    font-size: 0.72rem;
   }
 
   .cert-note {

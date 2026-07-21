@@ -8,9 +8,15 @@ const newSpeaker = () => ({
   image: '',
 })
 
-const newScheduleItem = () => ({
+const newScheduleDay = () => ({
+  dayTitle: '',
+  date: '',
+  sessions: [{ time: '', title: '' }],
+})
+
+const newScheduleSession = () => ({
+  time: '',
   title: '',
-  text: '',
 })
 
 const newProgrammeChair = () => ({
@@ -237,7 +243,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     }))
   }
 
-  const updateSchedule = (index, key, value) => {
+  const updateScheduleDay = (index, key, value) => {
     onContentChange((prev) => {
       const schedule = [...prev.schedule]
       schedule[index] = { ...schedule[index], [key]: value }
@@ -245,15 +251,47 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     })
   }
 
-  const addSchedule = () => {
-    onContentChange((prev) => ({ ...prev, schedule: [...prev.schedule, newScheduleItem()] }))
+  const updateScheduleSession = (dayIndex, sessionIndex, key, value) => {
+    onContentChange((prev) => {
+      const schedule = [...prev.schedule]
+      const day = { ...schedule[dayIndex] }
+      const sessions = [...(day.sessions ?? [])]
+      sessions[sessionIndex] = { ...sessions[sessionIndex], [key]: value }
+      day.sessions = sessions
+      schedule[dayIndex] = day
+      return { ...prev, schedule }
+    })
   }
 
-  const removeSchedule = (index) => {
+  const addScheduleDay = () => {
+    onContentChange((prev) => ({ ...prev, schedule: [...prev.schedule, newScheduleDay()] }))
+  }
+
+  const removeScheduleDay = (index) => {
     onContentChange((prev) => ({
       ...prev,
       schedule: prev.schedule.filter((_, itemIndex) => itemIndex !== index),
     }))
+  }
+
+  const addScheduleSession = (dayIndex) => {
+    onContentChange((prev) => {
+      const schedule = [...prev.schedule]
+      const day = { ...schedule[dayIndex] }
+      day.sessions = [...(day.sessions ?? []), newScheduleSession()]
+      schedule[dayIndex] = day
+      return { ...prev, schedule }
+    })
+  }
+
+  const removeScheduleSession = (dayIndex, sessionIndex) => {
+    onContentChange((prev) => {
+      const schedule = [...prev.schedule]
+      const day = { ...schedule[dayIndex] }
+      day.sessions = (day.sessions ?? []).filter((_, itemIndex) => itemIndex !== sessionIndex)
+      schedule[dayIndex] = day
+      return { ...prev, schedule }
+    })
   }
 
   const updateSpeaker = (index, key, value) => {
@@ -704,7 +742,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
 
         <section className="admin-card">
           <h2>Schedule Section</h2>
-          <p className="admin-helper-text">Open a popup editor to manage all schedule items.</p>
+          <p className="admin-helper-text">Open a popup editor to manage program days and session timings.</p>
           <button type="button" className="admin-add" onClick={openScheduleEditor}>
             Edit Schedule
           </button>
@@ -728,7 +766,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
 
         <section className="admin-card">
           <h2>Website Sections Content</h2>
-          <p className="admin-helper-text">Open a popup editor to update hero, about, objectives, legacy, audience, CTA, timeline, and footer content.</p>
+          <p className="admin-helper-text">Open a popup editor to update hero, about, objectives, legacy, audience, CTA, schedule, and footer content.</p>
           <button type="button" className="admin-add" onClick={openSectionsEditor}>
             Edit Website Sections
           </button>
@@ -837,30 +875,72 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
 
             <div className="admin-modal-editor">
               <div className="admin-stack">
-                {content.schedule.map((item, index) => (
-                  <article className="admin-item" key={`schedule-${index}`}>
+                {content.schedule.map((day, dayIndex) => (
+                  <article className="admin-item" key={`schedule-day-${dayIndex}`}>
                     <label>
-                      Schedule Title
+                      Day Title
                       <input
                         type="text"
-                        value={item.title}
-                        onChange={(event) => updateSchedule(index, 'title', event.target.value)}
+                        value={day.dayTitle || ''}
+                        onChange={(event) => updateScheduleDay(dayIndex, 'dayTitle', event.target.value)}
                       />
                     </label>
                     <label>
-                      Schedule Description
-                      <textarea
-                        value={item.text}
-                        onChange={(event) => updateSchedule(index, 'text', event.target.value)}
+                      Date
+                      <input
+                        type="text"
+                        value={day.date || ''}
+                        onChange={(event) => updateScheduleDay(dayIndex, 'date', event.target.value)}
                       />
                     </label>
-                    <button type="button" className="admin-danger" onClick={() => removeSchedule(index)}>
-                      Remove Schedule Item
-                    </button>
+
+                    <div className="admin-stack compact">
+                      {(day.sessions ?? []).map((session, sessionIndex) => (
+                        <article className="admin-item" key={`schedule-session-${dayIndex}-${sessionIndex}`}>
+                          <label>
+                            Time
+                            <input
+                              type="text"
+                              value={session.time || ''}
+                              onChange={(event) =>
+                                updateScheduleSession(dayIndex, sessionIndex, 'time', event.target.value)
+                              }
+                            />
+                          </label>
+                          <label>
+                            Session Title
+                            <textarea
+                              value={session.title || ''}
+                              onChange={(event) =>
+                                updateScheduleSession(dayIndex, sessionIndex, 'title', event.target.value)
+                              }
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="admin-danger"
+                            onClick={() => removeScheduleSession(dayIndex, sessionIndex)}
+                          >
+                            Remove Session
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+
+                    <div className="admin-row-actions">
+                      <button type="button" className="admin-add" onClick={() => addScheduleSession(dayIndex)}>
+                        Add Session
+                      </button>
+                      <button type="button" className="admin-danger" onClick={() => removeScheduleDay(dayIndex)}>
+                        Remove Day
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
-              <button type="button" className="admin-add" onClick={addSchedule}>Add Schedule Item</button>
+              <button type="button" className="admin-add" onClick={addScheduleDay}>
+                Add Day
+              </button>
             </div>
           </section>
         </div>
@@ -1019,7 +1099,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                 Add Chief Patron
               </button>
 
-              <h3>Patrons</h3>
+              <h3>Co-Patrons</h3>
               <div className="admin-stack">
                 {content.committee.patrons.map((item, index) => (
                   <article className="admin-item" key={`patron-${index}`}>
@@ -1228,6 +1308,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                         <th>Institution</th>
                         <th>Participant Type</th>
                         <th>Mode</th>
+                        <th>APAAR Id</th>
                         <th>Declaration</th>
                         <th>Submitted At</th>
                       </tr>
@@ -1242,6 +1323,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                           <td>{item.institution || '-'}</td>
                           <td>{item.participantType || '-'}</td>
                           <td>{item.mode || '-'}</td>
+                          <td>{item.apaarId || '-'}</td>
                           <td>{item.declaration || '-'}</td>
                           <td>{formatRegistrationDate(item.createdAt)}</td>
                         </tr>
@@ -1615,7 +1697,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
                 <label>
-                  Patrons Label
+                  Co-Patrons Label
                   <input
                     type="text"
                     value={content.sections.committee.patronsLabel}
@@ -1750,10 +1832,10 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                 </label>
               </div>
 
-              <h3>Timeline Section</h3>
+              <h3>Program Schedule Section</h3>
               <div className="admin-grid">
                 <label>
-                  Timeline Heading
+                  Schedule Heading
                   <input
                     type="text"
                     value={content.sections.schedule.heading}
@@ -1769,7 +1851,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                   />
                 </label>
                 <label>
-                  Timeline Note
+                  Schedule Note
                   <input
                     type="text"
                     value={content.sections.schedule.note}

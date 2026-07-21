@@ -2,19 +2,6 @@ const { validationResult } = require('express-validator')
 const ExcelJS = require('exceljs')
 const registrationService = require('../services/registration.service')
 
-const getImagePayloadFromDataUrl = (dataUrl = '') => {
-	const match = dataUrl.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/i)
-	if (!match) {
-		return null
-	}
-
-	const extension = match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase()
-	return {
-		extension,
-		base64: match[2],
-	}
-}
-
 const normalizeScope = (value = '') => {
 	const scope = String(value || '')
 		.trim()
@@ -115,13 +102,11 @@ const exportExcel = async (req, res, next) => {
 			{ header: 'Email', key: 'emailId', width: 28 },
 			{ header: 'Designation', key: 'designation', width: 24 },
 			{ header: 'Institution', key: 'institution', width: 30 },
-			{ header: 'Participant Type', key: 'participantType', width: 20 },
+			{ header: 'Participant Type', key: 'participantType', width: 28 },
 			{ header: 'Mode', key: 'mode', width: 12 },
+			{ header: 'APAAR Id', key: 'apaarId', width: 20 },
 			{ header: 'Declaration', key: 'declaration', width: 14 },
-			{ header: 'Signature', key: 'signature', width: 20 },
 			{ header: 'Submitted At', key: 'submittedAt', width: 24 },
-			{ header: 'Photo', key: 'photo', width: 18 },
-			{ header: 'Photo Source', key: 'photoSource', width: 34 },
 		]
 
 		const headerRow = worksheet.getRow(1)
@@ -138,34 +123,12 @@ const exportExcel = async (req, res, next) => {
 				institution: item.institution || '',
 				participantType: item.participantType || '',
 				mode: item.mode || '',
+				apaarId: item.apaarId || '',
 				declaration: item.declaration || '',
-				signature: item.signature || '',
 				submittedAt: item.createdAt ? new Date(item.createdAt).toISOString() : '',
-				photo: '',
-				photoSource:
-					typeof item.passportPhoto === 'string' && item.passportPhoto.startsWith('data:image/')
-						? 'Embedded image'
-						: item.passportPhoto || '',
 			})
 
 			row.alignment = { vertical: 'middle', wrapText: true }
-
-			const imagePayload = getImagePayloadFromDataUrl(item.passportPhoto)
-			if (!imagePayload) {
-				return
-			}
-
-			row.height = 72
-			const imageId = workbook.addImage({
-				base64: imagePayload.base64,
-				extension: imagePayload.extension,
-			})
-
-			// Column K (index 10) is the photo column.
-			worksheet.addImage(imageId, {
-				tl: { col: 10 + 0.1, row: row.number - 1 + 0.15 },
-				ext: { width: 62, height: 62 },
-			})
 		})
 
 		const fileBuffer = await workbook.xlsx.writeBuffer()

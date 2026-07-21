@@ -385,8 +385,8 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
       institution: row.institution || '',
       participantType: row.participantType || '',
       mode: row.mode || 'Online',
+      apaarId: row.apaarId || '',
       declaration: row.declaration || 'Yes',
-      signature: row.signature || '',
     })
     setEditError('')
   }
@@ -578,6 +578,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                         <th>Institution</th>
                         <th>Participant Type</th>
                         <th>Mode</th>
+                        <th>APAAR Id</th>
                         <th>Declaration</th>
                         <th>Submitted At</th>
                         <th>Actions</th>
@@ -593,6 +594,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                           <td>{item.institution || '-'}</td>
                           <td>{item.participantType || '-'}</td>
                           <td>{item.mode || '-'}</td>
+                          <td>{item.apaarId || '-'}</td>
                           <td>{item.declaration || '-'}</td>
                           <td>{formatRegistrationDate(item.createdAt)}</td>
                           <td>
@@ -667,12 +669,16 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                 </label>
                 <label>
                   Participant Type
-                  <input
-                    type="text"
+                  <select
                     value={editForm.participantType}
                     onChange={(event) => setEditForm((prev) => ({ ...prev, participantType: event.target.value }))}
-                    placeholder="Include 'Internal' or 'External'"
-                  />
+                  >
+                    <option value="">Select option</option>
+                    <option value="Faculty">Faculty</option>
+                    <option value="Researchers">Researchers</option>
+                    <option value="Ph.D. Scholars">Ph.D. Scholars</option>
+                    <option value="Clinicians & Industry Persons">Clinicians & Industry Persons</option>
+                  </select>
                 </label>
                 <label>
                   Mode
@@ -685,6 +691,14 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                   </select>
                 </label>
                 <label>
+                  APAAR Id
+                  <input
+                    type="text"
+                    value={editForm.apaarId}
+                    onChange={(event) => setEditForm((prev) => ({ ...prev, apaarId: event.target.value }))}
+                  />
+                </label>
+                <label>
                   Declaration
                   <select
                     value={editForm.declaration}
@@ -693,14 +707,6 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                   </select>
-                </label>
-                <label>
-                  Signature
-                  <input
-                    type="text"
-                    value={editForm.signature}
-                    onChange={(event) => setEditForm((prev) => ({ ...prev, signature: event.target.value }))}
-                  />
                 </label>
               </div>
 
