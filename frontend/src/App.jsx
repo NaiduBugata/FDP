@@ -1062,7 +1062,7 @@ const defaultContent = {
     {
       name: 'Dr. Kapil Kumar Soni',
       role: 'Assistant Professor, Dept. of IT',
-      org: 'NIT, Rourkela',
+      org: 'NIT, Raipur',
       image: kapil,
     },
     {
