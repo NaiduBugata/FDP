@@ -53,7 +53,7 @@ const EXCLUDED_HOST_KEYS = new Set(
 const isHostInstitution = (value = '') => {
   const key = normalizeInstitutionKey(value)
   if (!key) {
-    return true
+    return false
   }
 
   if (EXCLUDED_HOST_KEYS.has(key)) {
@@ -80,6 +80,22 @@ const isHostInstitution = (value = '') => {
   }
 
   return false
+}
+
+export const filterHostInstitutionRegistrations = (registrations = [], mode = '') => {
+  const normalizedMode = String(mode || '')
+    .trim()
+    .toLowerCase()
+
+  return registrations.filter((item) => {
+    if (!isHostInstitution(item?.institution)) {
+      return false
+    }
+    if (!normalizedMode) {
+      return true
+    }
+    return String(item?.mode || '').trim().toLowerCase() === normalizedMode
+  })
 }
 
 export const collectUniqueExternalColleges = (registrations = []) => {

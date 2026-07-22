@@ -1,7 +1,10 @@
 const { validationResult } = require('express-validator')
 const ExcelJS = require('exceljs')
 const registrationService = require('../services/registration.service')
-const { collectUniqueExternalColleges } = require('../utils/institution.utils')
+const {
+	collectUniqueExternalColleges,
+	filterHostInstitutionRegistrations,
+} = require('../utils/institution.utils')
 
 const normalizeScope = (value = '') => {
 	const scope = String(value || '')
@@ -285,6 +288,97 @@ const exportCollegesExcel = async (req, res, next) => {
 	}
 }
 
+const exportVfstrOnlineExcel = async (req, res, next) => {
+	try {
+		const registrations = sortBySubmittedAt(
+			filterHostInstitutionRegistrations(await registrationService.getAll(), 'Online'),
+		)
+		const totalCount = registrations.length
+		const workbook = new ExcelJS.Workbook()
+		const worksheet = workbook.addWorksheet('VFSTR Online')
+
+		worksheet.mergeCells('A1:K1')
+		const summaryCell = worksheet.getCell('A1')
+		summaryCell.value = `VFSTR / Vignan Online Participants | Total Count: ${totalCount} | Sorted by Submitted At (oldest first)`
+		summaryCell.font = { bold: true, size: 12 }
+		summaryCell.alignment = { vertical: 'middle', horizontal: 'left' }
+		worksheet.getRow(1).height = 26
+
+		worksheet.getRow(2).values = [
+			undefined,
+			'S.No',
+			'Name',
+			'Mobile',
+			'Email',
+			'Designation',
+			'Institution',
+			'Participant Type',
+			'Mode',
+			'APAAR Id',
+			'Declaration',
+			'Submitted At',
+		]
+
+		const headerRow = worksheet.getRow(2)
+		headerRow.font = { bold: true }
+		headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+		headerRow.height = 24
+
+		worksheet.columns = [
+			{ key: 'serialNo', width: 8 },
+			{ key: 'fullName', width: 24 },
+			{ key: 'mobileNumber', width: 18 },
+			{ key: 'emailId', width: 28 },
+			{ key: 'designation', width: 24 },
+			{ key: 'institution', width: 36 },
+			{ key: 'participantType', width: 28 },
+			{ key: 'mode', width: 12 },
+			{ key: 'apaarId', width: 20 },
+			{ key: 'declaration', width: 14 },
+			{ key: 'submittedAt', width: 24 },
+		]
+
+		registrations.forEach((item, index) => {
+			const row = worksheet.addRow({
+				serialNo: index + 1,
+				fullName: item.fullName || '',
+				mobileNumber: item.mobileNumber || '',
+				emailId: item.emailId || '',
+				designation: item.designation || '',
+				institution: item.institution || '',
+				participantType: item.participantType || '',
+				mode: item.mode || '',
+				apaarId: item.apaarId || '',
+				declaration: item.declaration || '',
+				submittedAt: item.createdAt ? new Date(item.createdAt).toLocaleString() : '',
+			})
+
+			row.alignment = { vertical: 'middle', wrapText: true }
+			row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }
+		})
+
+		worksheet.addRow([])
+		const countLabelRow = worksheet.addRow({
+			serialNo: '',
+			fullName: `Total Count: ${totalCount}`,
+		})
+		countLabelRow.getCell(2).font = { bold: true, size: 12 }
+
+		const fileBuffer = await workbook.xlsx.writeBuffer()
+		const datePart = new Date().toISOString().slice(0, 10)
+		const fileName = `vfstr-online-${totalCount}-${datePart}.xlsx`
+
+		res.setHeader(
+			'Content-Type',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		)
+		res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+		return res.status(200).send(fileBuffer)
+	} catch (error) {
+		return next(error)
+	}
+}
+
 module.exports = {
 	getAll,
 	getById,
@@ -293,4 +387,5 @@ module.exports = {
 	removeById,
 	exportExcel,
 	exportCollegesExcel,
+	exportVfstrOnlineExcel,
 }
