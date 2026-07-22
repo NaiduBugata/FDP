@@ -196,6 +196,17 @@
   font-weight: 600;
 }
 
+.admin-count-summary {
+  margin: 0 0 0.75rem;
+  color: #19344f;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.admin-count-summary strong {
+  font-weight: 800;
+}
+
 .admin-error-text {
   margin: 0.65rem 0 0;
   color: #b62424;

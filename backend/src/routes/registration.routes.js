@@ -4,6 +4,7 @@ const { body, param, validationResult } = require('express-validator')
 const registrationController = require('../controllers/registration.controller')
 const authMiddleware = require('../middlewares/auth.middleware')
 const adminMiddleware = require('../middlewares/admin.middleware')
+const superadminMiddleware = require('../middlewares/superadmin.middleware')
 const { PARTICIPANT_TYPES } = require('../models/registration.model')
 
 const router = express.Router()
@@ -18,6 +19,11 @@ const validateRequest = (req, res, next) => {
 
 router.get('/', [authMiddleware, adminMiddleware], registrationController.getAll)
 router.get('/export/excel', [authMiddleware, adminMiddleware], registrationController.exportExcel)
+router.get(
+	'/export/colleges',
+	[authMiddleware, adminMiddleware, superadminMiddleware],
+	registrationController.exportCollegesExcel,
+)
 router.get(
 	'/:id',
 	[authMiddleware, adminMiddleware, param('id').isMongoId().withMessage('Invalid ID')],

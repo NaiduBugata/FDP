@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator')
 const ExcelJS = require('exceljs')
 const registrationService = require('../services/registration.service')
+const { collectUniqueExternalColleges } = require('../utils/institution.utils')
 
 const normalizeScope = (value = '') => {
 	const scope = String(value || '')
@@ -13,6 +14,19 @@ const normalizeScope = (value = '') => {
 		return scope
 	}
 	return 'all'
+}
+
+const normalizeMode = (value = '') => {
+	const mode = String(value || '')
+		.trim()
+		.toLowerCase()
+	if (mode === 'online') {
+		return 'Online'
+	}
+	if (mode === 'offline') {
+		return 'Offline'
+	}
+	return ''
 }
 
 const applyScopeFilter = (items = [], scope = 'all') => {
@@ -33,11 +47,39 @@ const applyScopeFilter = (items = [], scope = 'all') => {
 	})
 }
 
+const applyModeFilter = (items = [], mode = '') => {
+	if (!mode) {
+		return items
+	}
+
+	return items.filter(
+		(item) => String(item?.mode || '').trim().toLowerCase() === mode.toLowerCase(),
+	)
+}
+
+const sortBySubmittedAt = (items = []) =>
+	[...items].sort((left, right) => {
+		const leftTime = left?.createdAt ? new Date(left.createdAt).getTime() : 0
+		const rightTime = right?.createdAt ? new Date(right.createdAt).getTime() : 0
+		return leftTime - rightTime
+	})
+
 const getAll = async (req, res, next) => {
 	try {
 		const scope = normalizeScope(req.query.scope)
-		const data = applyScopeFilter(await registrationService.getAll(), scope)
-		return res.status(200).json({ message: 'Registrations fetched successfully', data })
+		const mode = normalizeMode(req.query.mode)
+		const data = sortBySubmittedAt(
+			applyModeFilter(applyScopeFilter(await registrationService.getAll(), scope), mode),
+		)
+		return res.status(200).json({
+			message: 'Registrations fetched successfully',
+			data,
+			meta: {
+				count: data.length,
+				mode: mode || 'all',
+				scope,
+			},
+		})
 	} catch (error) {
 		return next(error)
 	}
@@ -92,30 +134,59 @@ const removeById = async (req, res, next) => {
 const exportExcel = async (req, res, next) => {
 	try {
 		const scope = normalizeScope(req.query.scope)
-		const registrations = applyScopeFilter(await registrationService.getAll(), scope)
+		const mode = normalizeMode(req.query.mode)
+		const registrations = sortBySubmittedAt(
+			applyModeFilter(applyScopeFilter(await registrationService.getAll(), scope), mode),
+		)
+		const totalCount = registrations.length
+		const modeLabel = mode || 'All'
 		const workbook = new ExcelJS.Workbook()
 		const worksheet = workbook.addWorksheet('Registrations')
 
-		worksheet.columns = [
-			{ header: 'Name', key: 'fullName', width: 24 },
-			{ header: 'Mobile', key: 'mobileNumber', width: 18 },
-			{ header: 'Email', key: 'emailId', width: 28 },
-			{ header: 'Designation', key: 'designation', width: 24 },
-			{ header: 'Institution', key: 'institution', width: 30 },
-			{ header: 'Participant Type', key: 'participantType', width: 28 },
-			{ header: 'Mode', key: 'mode', width: 12 },
-			{ header: 'APAAR Id', key: 'apaarId', width: 20 },
-			{ header: 'Declaration', key: 'declaration', width: 14 },
-			{ header: 'Submitted At', key: 'submittedAt', width: 24 },
+		worksheet.mergeCells('A1:K1')
+		const summaryCell = worksheet.getCell('A1')
+		summaryCell.value = `Mode: ${modeLabel} | Total Count: ${totalCount} | Sorted by Submitted At (oldest first)`
+		summaryCell.font = { bold: true, size: 12 }
+		summaryCell.alignment = { vertical: 'middle', horizontal: 'left' }
+		worksheet.getRow(1).height = 26
+
+		worksheet.getRow(2).values = [
+			undefined,
+			'S.No',
+			'Name',
+			'Mobile',
+			'Email',
+			'Designation',
+			'Institution',
+			'Participant Type',
+			'Mode',
+			'APAAR Id',
+			'Declaration',
+			'Submitted At',
 		]
 
-		const headerRow = worksheet.getRow(1)
+		const headerRow = worksheet.getRow(2)
 		headerRow.font = { bold: true }
 		headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
 		headerRow.height = 24
 
-		registrations.forEach((item) => {
+		worksheet.columns = [
+			{ key: 'serialNo', width: 8 },
+			{ key: 'fullName', width: 24 },
+			{ key: 'mobileNumber', width: 18 },
+			{ key: 'emailId', width: 28 },
+			{ key: 'designation', width: 24 },
+			{ key: 'institution', width: 30 },
+			{ key: 'participantType', width: 28 },
+			{ key: 'mode', width: 12 },
+			{ key: 'apaarId', width: 20 },
+			{ key: 'declaration', width: 14 },
+			{ key: 'submittedAt', width: 24 },
+		]
+
+		registrations.forEach((item, index) => {
 			const row = worksheet.addRow({
+				serialNo: index + 1,
 				fullName: item.fullName || '',
 				mobileNumber: item.mobileNumber || '',
 				emailId: item.emailId || '',
@@ -125,17 +196,83 @@ const exportExcel = async (req, res, next) => {
 				mode: item.mode || '',
 				apaarId: item.apaarId || '',
 				declaration: item.declaration || '',
-				submittedAt: item.createdAt ? new Date(item.createdAt).toISOString() : '',
+				submittedAt: item.createdAt ? new Date(item.createdAt).toLocaleString() : '',
 			})
 
 			row.alignment = { vertical: 'middle', wrapText: true }
+			row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }
 		})
+
+		worksheet.addRow([])
+		const countLabelRow = worksheet.addRow({
+			serialNo: '',
+			fullName: `Total Count: ${totalCount}`,
+		})
+		countLabelRow.getCell(2).font = { bold: true, size: 12 }
 
 		const fileBuffer = await workbook.xlsx.writeBuffer()
 
 		const datePart = new Date().toISOString().slice(0, 10)
 		const scopePart = scope === 'all' ? 'all' : scope
-		const fileName = `new-registrations-${scopePart}-${datePart}.xlsx`
+		const modePart = mode ? mode.toLowerCase() : 'all-modes'
+		const fileName = `new-registrations-${scopePart}-${modePart}-${totalCount}-${datePart}.xlsx`
+
+		res.setHeader(
+			'Content-Type',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		)
+		res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+		return res.status(200).send(fileBuffer)
+	} catch (error) {
+		return next(error)
+	}
+}
+
+const exportCollegesExcel = async (req, res, next) => {
+	try {
+		const registrations = await registrationService.getAll()
+		const colleges = collectUniqueExternalColleges(registrations)
+		const totalCount = colleges.length
+		const workbook = new ExcelJS.Workbook()
+		const worksheet = workbook.addWorksheet('Colleges')
+
+		worksheet.mergeCells('A1:B1')
+		const summaryCell = worksheet.getCell('A1')
+		summaryCell.value = `Unique Colleges (excluding VFSTR/Vignan variants) | Total Count: ${totalCount} | Alphabetical`
+		summaryCell.font = { bold: true, size: 12 }
+		summaryCell.alignment = { vertical: 'middle', horizontal: 'left' }
+		worksheet.getRow(1).height = 26
+
+		worksheet.getRow(2).values = [undefined, 'S.No', 'College / Institution']
+		const headerRow = worksheet.getRow(2)
+		headerRow.font = { bold: true }
+		headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+		headerRow.height = 24
+
+		worksheet.columns = [
+			{ key: 'serialNo', width: 8 },
+			{ key: 'institution', width: 60 },
+		]
+
+		colleges.forEach((institution, index) => {
+			const row = worksheet.addRow({
+				serialNo: index + 1,
+				institution,
+			})
+			row.alignment = { vertical: 'middle', wrapText: true }
+			row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' }
+		})
+
+		worksheet.addRow([])
+		const countLabelRow = worksheet.addRow({
+			serialNo: '',
+			institution: `Total Count: ${totalCount}`,
+		})
+		countLabelRow.getCell(2).font = { bold: true, size: 12 }
+
+		const fileBuffer = await workbook.xlsx.writeBuffer()
+		const datePart = new Date().toISOString().slice(0, 10)
+		const fileName = `unique-colleges-${totalCount}-${datePart}.xlsx`
 
 		res.setHeader(
 			'Content-Type',
@@ -155,4 +292,5 @@ module.exports = {
 	updateById,
 	removeById,
 	exportExcel,
+	exportCollegesExcel,
 }

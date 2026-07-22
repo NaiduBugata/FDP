@@ -14,7 +14,7 @@ const formatRegistrationDate = (value) => {
   return date.toLocaleString()
 }
 
-const downloadExcel = async ({ apiBaseUrl, adminToken, scope, onError }) => {
+const downloadExcel = async ({ apiBaseUrl, adminToken, scope, mode, onError }) => {
   try {
     if (!adminToken) {
       throw new Error('Admin API token missing. Login with backend admin credentials.')
@@ -23,6 +23,9 @@ const downloadExcel = async ({ apiBaseUrl, adminToken, scope, onError }) => {
     const url = new URL(`${apiBaseUrl}/registrations/export/excel`)
     if (scope && scope !== 'all') {
       url.searchParams.set('scope', scope)
+    }
+    if (mode) {
+      url.searchParams.set('mode', mode)
     }
 
     const response = await fetch(url.toString(), {
@@ -253,6 +256,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   const [isLoadingExternal, setIsLoadingExternal] = useState(false)
 
   const [isExportingAll, setIsExportingAll] = useState(false)
+  const [exportingMode, setExportingMode] = useState('')
   const [isExportingInternal, setIsExportingInternal] = useState(false)
   const [isExportingExternal, setIsExportingExternal] = useState(false)
 
@@ -264,6 +268,16 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   const [editForm, setEditForm] = useState(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editError, setEditError] = useState('')
+
+  const liveRegistrationCounts = useMemo(() => {
+    const online = allRows.filter((row) => String(row?.mode || '').toLowerCase() === 'online').length
+    const offline = allRows.filter((row) => String(row?.mode || '').toLowerCase() === 'offline').length
+    return {
+      total: allRows.length,
+      online,
+      offline,
+    }
+  }, [allRows])
 
   const panels = useMemo(
     () => [
@@ -291,15 +305,23 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
             setIsLoadingAll(false)
           }
         },
-        onDownload: async () => {
+        onDownload: async (mode = '') => {
           setIsExportingAll(true)
+          setExportingMode(mode || 'all')
           setErrorAll('')
-          if (allMode === 'combined') {
+          if (allMode === 'combined' && !mode) {
             await downloadCombinedParticipantsExcel({ apiBaseUrl, adminToken, onError: setErrorAll })
           } else {
-            await downloadExcel({ apiBaseUrl, adminToken, scope: 'all', onError: setErrorAll })
+            await downloadExcel({
+              apiBaseUrl,
+              adminToken,
+              scope: 'all',
+              mode,
+              onError: setErrorAll,
+            })
           }
           setIsExportingAll(false)
+          setExportingMode('')
         },
       },
       {
@@ -435,8 +457,26 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
   }
 
   useEffect(() => {
-    // Keep tables opt-in via View buttons.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false
+
+    const loadCounts = async () => {
+      try {
+        const data = await fetchRegistrations({ apiBaseUrl, adminToken, scope: 'all' })
+        if (!cancelled) {
+          setAllRows(data)
+        }
+      } catch {
+        // Counts stay at 0 until View/Refresh succeeds.
+      }
+    }
+
+    if (adminToken && apiBaseUrl) {
+      loadCounts()
+    }
+
+    return () => {
+      cancelled = true
+    }
   }, [adminToken, apiBaseUrl])
 
   return (
@@ -462,6 +502,15 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
         {panels.map((panel) => (
           <section className="admin-card" key={panel.scope}>
             <h2>{panel.title}</h2>
+            {panel.scope === 'all' && allMode === 'live' ? (
+              <p className="admin-count-summary">
+                Total: <strong>{liveRegistrationCounts.total}</strong>
+                {' · '}
+                Online: <strong>{liveRegistrationCounts.online}</strong>
+                {' · '}
+                Offline: <strong>{liveRegistrationCounts.offline}</strong>
+              </p>
+            ) : null}
             <div className="admin-row-actions">
               {panel.scope === 'all' ? (
                 <>
@@ -499,9 +548,44 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
               <button type="button" className="admin-add" onClick={panel.onRefresh} disabled={panel.isLoading}>
                 {panel.isLoading ? 'Refreshing...' : 'Refresh'}
               </button>
-              <button type="button" className="admin-muted" onClick={panel.onDownload} disabled={panel.isExporting}>
-                {panel.isExporting ? 'Preparing Excel...' : 'Download Excel'}
-              </button>
+              {panel.scope === 'all' && allMode === 'live' ? (
+                <>
+                  <button
+                    type="button"
+                    className="admin-muted"
+                    onClick={() => panel.onDownload('')}
+                    disabled={panel.isExporting}
+                  >
+                    {panel.isExporting && exportingMode === 'all'
+                      ? 'Preparing Excel...'
+                      : `Download All (${liveRegistrationCounts.total})`}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-muted"
+                    onClick={() => panel.onDownload('Online')}
+                    disabled={panel.isExporting}
+                  >
+                    {panel.isExporting && exportingMode === 'Online'
+                      ? 'Preparing Excel...'
+                      : `Download Online (${liveRegistrationCounts.online})`}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-muted"
+                    onClick={() => panel.onDownload('Offline')}
+                    disabled={panel.isExporting}
+                  >
+                    {panel.isExporting && exportingMode === 'Offline'
+                      ? 'Preparing Excel...'
+                      : `Download Offline (${liveRegistrationCounts.offline})`}
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="admin-muted" onClick={() => panel.onDownload()} disabled={panel.isExporting}>
+                  {panel.isExporting ? 'Preparing Excel...' : 'Download Excel'}
+                </button>
+              )}
             </div>
 
             {panel.error ? <p className="admin-error-text">{panel.error}</p> : null}
@@ -519,6 +603,9 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
               (panel.scope === 'external' && isExternalVisible)) &&
             panel.rows.length > 0 ? (
               <div className="admin-table-wrap">
+                {panel.scope === 'all' && allMode === 'live' ? (
+                  <p className="admin-helper-text">Showing {panel.rows.length} registration(s), ordered by submitted time.</p>
+                ) : null}
                 {panel.scope === 'internal' ? (
                   <table className="admin-table">
                     <thead>
@@ -571,6 +658,7 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                   <table className="admin-table">
                     <thead>
                       <tr>
+                        <th>S.No</th>
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>Email</th>
@@ -585,8 +673,9 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {panel.rows.map((item) => (
+                      {panel.rows.map((item, index) => (
                         <tr key={item._id}>
+                          <td>{index + 1}</td>
                           <td>{item.fullName || '-'}</td>
                           <td>{item.mobileNumber || '-'}</td>
                           <td>{item.emailId || '-'}</td>
@@ -598,9 +687,13 @@ function AdminRegistrationsPage({ apiBaseUrl, adminToken, onLogout }) {
                           <td>{item.declaration || '-'}</td>
                           <td>{formatRegistrationDate(item.createdAt)}</td>
                           <td>
-                            <button type="button" className="admin-muted" onClick={() => openEdit(item)}>
-                              Edit
-                            </button>
+                            {item._id && allMode === 'live' ? (
+                              <button type="button" className="admin-muted" onClick={() => openEdit(item)}>
+                                Edit
+                              </button>
+                            ) : (
+                              '-'
+                            )}
                           </td>
                         </tr>
                       ))}

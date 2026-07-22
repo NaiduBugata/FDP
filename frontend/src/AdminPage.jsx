@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './AdminPage.css'
+import { collectUniqueExternalColleges } from './institutionFilters'
 
 const newSpeaker = () => ({
   name: '',
@@ -103,7 +104,24 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
   const [isRegistrationsLoading, setIsRegistrationsLoading] = useState(false)
   const [registrationsError, setRegistrationsError] = useState('')
   const [isExportingRegistrations, setIsExportingRegistrations] = useState(false)
+  const [exportingMode, setExportingMode] = useState('')
+  const [isExportingColleges, setIsExportingColleges] = useState(false)
   const [activeFormFieldIndex, setActiveFormFieldIndex] = useState(null)
+
+  const registrationCounts = useMemo(() => {
+    const online = registrations.filter((row) => String(row?.mode || '').toLowerCase() === 'online').length
+    const offline = registrations.filter((row) => String(row?.mode || '').toLowerCase() === 'offline').length
+    return {
+      total: registrations.length,
+      online,
+      offline,
+    }
+  }, [registrations])
+
+  const collegeCount = useMemo(
+    () => collectUniqueExternalColleges(registrations).length,
+    [registrations],
+  )
 
   const loadRegistrations = async () => {
     setIsRegistrationsLoading(true)
@@ -132,6 +150,40 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     }
   }
 
+  useEffect(() => {
+    let cancelled = false
+
+    const loadCounts = async () => {
+      try {
+        if (!adminToken || !apiBaseUrl) {
+          return
+        }
+
+        const response = await fetch(`${apiBaseUrl}/registrations`, {
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+          },
+        })
+        if (!response.ok) {
+          return
+        }
+
+        const payload = await response.json()
+        if (!cancelled) {
+          setRegistrations(Array.isArray(payload.data) ? payload.data : [])
+        }
+      } catch {
+        // Counts stay at 0 until View/Refresh succeeds.
+      }
+    }
+
+    loadCounts()
+
+    return () => {
+      cancelled = true
+    }
+  }, [adminToken, apiBaseUrl])
+
   const openRegistrationsPanel = async () => {
     setIsRegistrationsOpen(true)
     await loadRegistrations()
@@ -141,8 +193,9 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     setIsRegistrationsOpen(false)
   }
 
-  const downloadRegistrationsExcel = async () => {
+  const downloadRegistrationsExcel = async (mode = '') => {
     setIsExportingRegistrations(true)
+    setExportingMode(mode || 'all')
     setRegistrationsError('')
 
     try {
@@ -150,7 +203,12 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
         throw new Error('Admin API token missing. Login with backend admin credentials.')
       }
 
-      const response = await fetch(`${apiBaseUrl}/registrations/export/excel`, {
+      const url = new URL(`${apiBaseUrl}/registrations/export/excel`)
+      if (mode) {
+        url.searchParams.set('mode', mode)
+      }
+
+      const response = await fetch(url.toString(), {
         headers: {
           Authorization: `Bearer ${adminToken}`,
         },
@@ -176,6 +234,46 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       setRegistrationsError(error.message || 'Failed to download registrations file')
     } finally {
       setIsExportingRegistrations(false)
+      setExportingMode('')
+    }
+  }
+
+  const downloadCollegesExcel = async () => {
+    setIsExportingColleges(true)
+    setRegistrationsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/colleges`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.message || 'Failed to download colleges file')
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('content-disposition') || ''
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
+      const fileName = match?.[1] || 'unique-colleges.xlsx'
+
+      const fileUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(fileUrl)
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download colleges file')
+    } finally {
+      setIsExportingColleges(false)
     }
   }
 
@@ -692,7 +790,16 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
 
         <section className="admin-card">
           <h2>Registration Details</h2>
-          <p className="admin-helper-text">View all registered participants and download the full list in Excel.</p>
+          <p className="admin-helper-text">View all registered participants and download Online/Offline lists in Excel.</p>
+          <p className="admin-count-summary">
+            Total: <strong>{registrationCounts.total}</strong>
+            {' · '}
+            Online: <strong>{registrationCounts.online}</strong>
+            {' · '}
+            Offline: <strong>{registrationCounts.offline}</strong>
+            {' · '}
+            Colleges: <strong>{collegeCount}</strong>
+          </p>
           <div className="admin-row-actions">
             <button type="button" className="admin-add" onClick={openRegistrationsPanel}>
               View Registrations
@@ -700,10 +807,42 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
             <button
               type="button"
               className="admin-muted"
-              onClick={downloadRegistrationsExcel}
-              disabled={isExportingRegistrations}
+              onClick={() => downloadRegistrationsExcel('')}
+              disabled={isExportingRegistrations || isExportingColleges}
             >
-              {isExportingRegistrations ? 'Preparing Excel...' : 'Download Excel'}
+              {isExportingRegistrations && exportingMode === 'all'
+                ? 'Preparing Excel...'
+                : `Download All (${registrationCounts.total})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={() => downloadRegistrationsExcel('Online')}
+              disabled={isExportingRegistrations || isExportingColleges}
+            >
+              {isExportingRegistrations && exportingMode === 'Online'
+                ? 'Preparing Excel...'
+                : `Download Online (${registrationCounts.online})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={() => downloadRegistrationsExcel('Offline')}
+              disabled={isExportingRegistrations || isExportingColleges}
+            >
+              {isExportingRegistrations && exportingMode === 'Offline'
+                ? 'Preparing Excel...'
+                : `Download Offline (${registrationCounts.offline})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadCollegesExcel}
+              disabled={isExportingRegistrations || isExportingColleges}
+            >
+              {isExportingColleges
+                ? 'Preparing Excel...'
+                : `Download Colleges (${collegeCount})`}
             </button>
           </div>
           {registrationsError ? <p className="admin-error-text">{registrationsError}</p> : null}
@@ -1298,9 +1437,13 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               ) : null}
               {!isRegistrationsLoading && !registrationsError && registrations.length > 0 ? (
                 <div className="admin-table-wrap">
+                  <p className="admin-helper-text">
+                    Showing {registrations.length} registration(s), ordered by submitted time.
+                  </p>
                   <table className="admin-table">
                     <thead>
                       <tr>
+                        <th>S.No</th>
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>Email</th>
@@ -1314,8 +1457,9 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
                       </tr>
                     </thead>
                     <tbody>
-                      {registrations.map((item) => (
+                      {registrations.map((item, index) => (
                         <tr key={item._id}>
+                          <td>{index + 1}</td>
                           <td>{item.fullName || '-'}</td>
                           <td>{item.mobileNumber || '-'}</td>
                           <td>{item.emailId || '-'}</td>
