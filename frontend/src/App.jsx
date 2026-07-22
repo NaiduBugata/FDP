@@ -202,7 +202,7 @@ const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'full-name',
     name: 'fullName',
-    label: 'Full Name (Institution/Organization)',
+    label: 'Full Name',
     type: 'text',
     required: true,
     section: '1. Basic Details',
