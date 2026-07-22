@@ -36,7 +36,7 @@ router.post(
 			.trim()
 			.isIn(PARTICIPANT_TYPES)
 			.withMessage(`Participant type must be one of: ${PARTICIPANT_TYPES.join(', ')}`),
-		body('mode').isIn(['Online', 'Offline']).withMessage('Mode must be Online or Offline'),
+		body('mode').isIn(['Offline']).withMessage('Mode must be Offline (online registrations are closed)'),
 		body('apaarId').optional({ checkFalsy: true }).trim().isLength({ max: 120 }).withMessage('APAAR Id is too long'),
 		body('declaration').isIn(['Yes', 'No']).withMessage('Declaration must be Yes or No'),
 	],

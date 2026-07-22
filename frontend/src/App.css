@@ -601,6 +601,15 @@
   font-size: 0.95rem;
 }
 
+.hero-registration-notice {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  font-size: clamp(0.92rem, 1.5vw, 1.05rem);
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: color-mix(in oklab, var(--primary-fixed) 92%, white);
+}
+
 .days-left {
   display: none;
 }

@@ -21,7 +21,7 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v42'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v44'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
   'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
@@ -256,11 +256,11 @@ const DEFAULT_REGISTRATION_FIELDS = [
   {
     id: 'mode',
     name: 'mode',
-    label: 'Mode (Online / Offline)',
+    label: 'Mode',
     type: 'select',
     required: true,
     section: '3. Participation',
-    options: ['Online', 'Offline'],
+    options: ['Offline'],
   },
   {
     id: 'apaar-id',
@@ -301,6 +301,7 @@ const DEFAULT_SECTION_CONTENT = {
     registerButtonText: 'Register Now',
     scheduleButtonText: 'View Schedule',
     daysLeftSuffix: 'left until seminar begins',
+    registrationNotice: 'Online registrations are closed. Offline registration is open.',
   },
   about: {
     heading: 'About the Programme',
@@ -465,7 +466,7 @@ const DEFAULT_SECTION_CONTENT = {
     feeLabel: 'REGISTRATION FEE',
     feeValue: 'FREE REGISTRATION',
     registerButtonText: 'Register Now',
-    note: 'Registration link is valid for first 100 eligible participants.',
+    note: 'Online registrations are closed. Offline registration is open for eligible participants.',
   },
   schedule: {
     heading: 'Program Schedule (27th - 31st July 2026)',
@@ -544,6 +545,7 @@ const normalizeSections = (sections) => {
         String(source.hero.daysLeftSuffix).trim().toLowerCase() === 'days left until seminar begins'
           ? DEFAULT_SECTION_CONTENT.hero.daysLeftSuffix
           : source.hero.daysLeftSuffix,
+      registrationNotice: DEFAULT_SECTION_CONTENT.hero.registrationNotice,
     },
     about: {
       ...DEFAULT_SECTION_CONTENT.about,
@@ -636,6 +638,7 @@ const normalizeSections = (sections) => {
     cta: {
       ...DEFAULT_SECTION_CONTENT.cta,
       ...(source.cta ?? {}),
+      note: DEFAULT_SECTION_CONTENT.cta.note,
     },
     schedule: {
       ...DEFAULT_SECTION_CONTENT.schedule,
@@ -700,7 +703,7 @@ const normalizeRegistrationFields = (fields) => {
       const name = field?.name ?? `field_${index + 1}`
       const isOptionalApaar = name === 'apaarId'
       const defaultField = DEFAULT_REGISTRATION_FIELDS.find((item) => item.name === name)
-      const forcedLabelNames = new Set(['emailId', 'fullName', 'institution'])
+      const forcedLabelNames = new Set(['emailId', 'fullName', 'institution', 'mode'])
       return {
         id: field?.id ?? `field-${index + 1}`,
         name,
@@ -711,7 +714,12 @@ const normalizeRegistrationFields = (fields) => {
         type: field?.type ?? 'text',
         required: !isOptionalApaar,
         section: field?.section ?? 'Additional Details',
-        options: Array.isArray(field?.options) ? field.options : [],
+        options:
+          name === 'mode' && defaultField
+            ? defaultField.options
+            : Array.isArray(field?.options)
+              ? field.options
+              : [],
       }
     })
     .filter((field) => field.name.trim() && field.label.trim())
@@ -1339,7 +1347,7 @@ function App() {
     designation: '',
     institution: '',
     participantType: '',
-    mode: '',
+    mode: 'Offline',
     apaarId: '',
     declaration: false,
   })
@@ -1619,7 +1627,7 @@ function App() {
         designation: '',
         institution: '',
         participantType: '',
-        mode: '',
+        mode: 'Offline',
         apaarId: '',
         declaration: false,
       })
@@ -2054,6 +2062,7 @@ function App() {
                 {sectionContent.hero.scheduleButtonText}
               </a>
             </div>
+            <p className="hero-registration-notice">{sectionContent.hero.registrationNotice}</p>
             <p className="hero-meta-line">
               <span>{renderTextWithDateOrdinals(sectionContent.hero.metaDate)}</span>
               <span className="hero-meta-dot" aria-hidden="true" />
