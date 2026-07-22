@@ -21,7 +21,7 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v41'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v42'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
   'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
@@ -1185,10 +1185,21 @@ const buildContentFromSaved = (saved = {}) => {
         (speaker) => {
           const match = defaultContent.speakers.find(
             (item) =>
-              String(item.name).trim().toLowerCase() === String(speaker.name ?? '').trim().toLowerCase(),
+              String(item.name).trim().toLowerCase() === String(speaker.name ?? '').trim().toLowerCase() ||
+              (/kapil|soni/i.test(String(item.name ?? '')) &&
+                /kapil|soni/i.test(String(speaker.name ?? ''))),
           )
           if (!match) {
             return speaker
+          }
+          if (/kapil|soni/i.test(String(match.name ?? ''))) {
+            return {
+              ...speaker,
+              name: match.name,
+              role: match.role,
+              org: match.org,
+              image: match.image ?? speaker.image,
+            }
           }
           return {
             ...speaker,
