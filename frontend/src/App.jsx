@@ -24,7 +24,7 @@ const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
 const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v44'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
-  'https://chat.whatsapp.com/JrvqLp4Q7mP4PEhHE71Vhv?s=sw&p=a&ilr=0'
+  'https://chat.whatsapp.com/C7OcNsQlZ5n8LMCNucKvkf?s=sw&p=a&ilr=0'
 const DEFAULT_API_BASE_URL = import.meta.env.PROD
 	? 'https://fdp-r80r.onrender.com'
 	: 'http://localhost:5000'
