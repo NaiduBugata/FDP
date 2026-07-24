@@ -21,9 +21,9 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v45'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v46'
 const REGISTRATIONS_CLOSED = true
-const REGISTRATIONS_CLOSED_MESSAGE = 'Registrations are closed.'
+const REGISTRATIONS_CLOSED_MESSAGE = 'Registrations are closed. (Spot registrations Available)'
 const REGISTRATIONS_CLOSED_BUTTON_TEXT = 'Registrations closed'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
