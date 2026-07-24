@@ -4,6 +4,7 @@ const registrationService = require('../services/registration.service')
 const {
 	collectUniqueExternalColleges,
 	filterHostInstitutionRegistrations,
+	filterOtherCollegeRegistrations,
 } = require('../utils/institution.utils')
 
 const normalizeScope = (value = '') => {
@@ -334,6 +335,38 @@ const exportVfstrAllExcel = async (req, res, next) => {
 	}
 }
 
+const exportOtherCollegesOnlineExcel = async (req, res, next) => {
+	try {
+		const registrations = sortBySubmittedAt(
+			filterOtherCollegeRegistrations(await registrationService.getAll(), 'Online'),
+		)
+		return sendVfstrRegistrationsExcel(res, {
+			registrations,
+			sheetName: 'Other Colleges Online',
+			summaryLabel: 'Other Colleges Online Participants (excluding VFSTR/Vignan)',
+			filePrefix: 'QuBioDL-Other-Colleges-Online',
+		})
+	} catch (error) {
+		return next(error)
+	}
+}
+
+const exportOtherCollegesOfflineExcel = async (req, res, next) => {
+	try {
+		const registrations = sortBySubmittedAt(
+			filterOtherCollegeRegistrations(await registrationService.getAll(), 'Offline'),
+		)
+		return sendVfstrRegistrationsExcel(res, {
+			registrations,
+			sheetName: 'Other Colleges Offline',
+			summaryLabel: 'Other Colleges Offline Participants (excluding VFSTR/Vignan)',
+			filePrefix: 'QuBioDL-Other-Colleges-Offline',
+		})
+	} catch (error) {
+		return next(error)
+	}
+}
+
 const sendVfstrRegistrationsExcel = async (
 	res,
 	{ registrations, sheetName, summaryLabel, filePrefix },
@@ -432,4 +465,6 @@ module.exports = {
 	exportVfstrOnlineExcel,
 	exportVfstrOfflineExcel,
 	exportVfstrAllExcel,
+	exportOtherCollegesOnlineExcel,
+	exportOtherCollegesOfflineExcel,
 }

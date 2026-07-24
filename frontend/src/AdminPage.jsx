@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './AdminPage.css'
-import { collectUniqueExternalColleges, filterHostInstitutionRegistrations } from './institutionFilters'
+import { collectUniqueExternalColleges, filterHostInstitutionRegistrations, filterOtherCollegeRegistrations } from './institutionFilters'
 
 const newSpeaker = () => ({
   name: '',
@@ -109,6 +109,8 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
   const [isExportingVfstrOnline, setIsExportingVfstrOnline] = useState(false)
   const [isExportingVfstrOffline, setIsExportingVfstrOffline] = useState(false)
   const [isExportingVfstrAll, setIsExportingVfstrAll] = useState(false)
+  const [isExportingOtherOnline, setIsExportingOtherOnline] = useState(false)
+  const [isExportingOtherOffline, setIsExportingOtherOffline] = useState(false)
   const [activeFormFieldIndex, setActiveFormFieldIndex] = useState(null)
 
   const registrationCounts = useMemo(() => {
@@ -141,12 +143,24 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     [registrations],
   )
 
+  const otherCollegesOnlineCount = useMemo(
+    () => filterOtherCollegeRegistrations(registrations, 'Online').length,
+    [registrations],
+  )
+
+  const otherCollegesOfflineCount = useMemo(
+    () => filterOtherCollegeRegistrations(registrations, 'Offline').length,
+    [registrations],
+  )
+
   const isAnyExporting =
     isExportingRegistrations ||
     isExportingColleges ||
     isExportingVfstrOnline ||
     isExportingVfstrOffline ||
-    isExportingVfstrAll
+    isExportingVfstrAll ||
+    isExportingOtherOnline ||
+    isExportingOtherOffline
 
   const loadRegistrations = async () => {
     setIsRegistrationsLoading(true)
@@ -398,6 +412,70 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       setRegistrationsError(error.message || 'Failed to download VFSTR all file')
     } finally {
       setIsExportingVfstrAll(false)
+    }
+  }
+
+  const downloadOtherCollegesOnlineExcel = async () => {
+    setIsExportingOtherOnline(true)
+    setRegistrationsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/other-colleges-online`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.message || 'Failed to download other colleges online file')
+      }
+
+      const blob = await response.blob()
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-Other-Colleges-Online-${datePart}.xlsx`),
+      )
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download other colleges online file')
+    } finally {
+      setIsExportingOtherOnline(false)
+    }
+  }
+
+  const downloadOtherCollegesOfflineExcel = async () => {
+    setIsExportingOtherOffline(true)
+    setRegistrationsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/other-colleges-offline`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.message || 'Failed to download other colleges offline file')
+      }
+
+      const blob = await response.blob()
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-Other-Colleges-Offline-${datePart}.xlsx`),
+      )
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download other colleges offline file')
+    } finally {
+      setIsExportingOtherOffline(false)
     }
   }
 
@@ -929,6 +1007,10 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
             VFSTR Offline: <strong>{vfstrOfflineCount}</strong>
             {' · '}
             VFSTR All: <strong>{vfstrAllCount}</strong>
+            {' · '}
+            Other Online: <strong>{otherCollegesOnlineCount}</strong>
+            {' · '}
+            Other Offline: <strong>{otherCollegesOfflineCount}</strong>
           </p>
           <div className="admin-row-actions">
             <button type="button" className="admin-add" onClick={openRegistrationsPanel}>
@@ -1003,6 +1085,26 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               {isExportingVfstrAll
                 ? 'Preparing Excel...'
                 : `Download VFSTR All (${vfstrAllCount})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadOtherCollegesOnlineExcel}
+              disabled={isAnyExporting}
+            >
+              {isExportingOtherOnline
+                ? 'Preparing Excel...'
+                : `Download Other Colleges Online (${otherCollegesOnlineCount})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadOtherCollegesOfflineExcel}
+              disabled={isAnyExporting}
+            >
+              {isExportingOtherOffline
+                ? 'Preparing Excel...'
+                : `Download Other Colleges Offline (${otherCollegesOfflineCount})`}
             </button>
           </div>
           {registrationsError ? <p className="admin-error-text">{registrationsError}</p> : null}

@@ -106,6 +106,33 @@ export const filterHostInstitutionRegistrations = (registrations = [], mode = ''
   })
 }
 
+const isVignanEmailAddress = (value = '') => {
+  const email = String(value || '')
+    .trim()
+    .toLowerCase()
+  return (
+    email.endsWith('@vignan.ac.in') ||
+    email.endsWith('@vignanuniversity.in') ||
+    email.endsWith('@vignanuniversity.com')
+  )
+}
+
+export const filterOtherCollegeRegistrations = (registrations = [], mode = '') => {
+  const normalizedMode = String(mode || '')
+    .trim()
+    .toLowerCase()
+
+  return registrations.filter((item) => {
+    if (isHostInstitution(item?.institution) || isVignanEmailAddress(item?.emailId || item?.email)) {
+      return false
+    }
+    if (!normalizedMode) {
+      return true
+    }
+    return String(item?.mode || '').trim().toLowerCase() === normalizedMode
+  })
+}
+
 export const collectUniqueExternalColleges = (registrations = []) => {
   const byKey = new Map()
 

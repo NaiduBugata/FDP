@@ -40,6 +40,16 @@ router.get(
 	registrationController.exportVfstrAllExcel,
 )
 router.get(
+	'/export/other-colleges-online',
+	[authMiddleware, adminMiddleware, superadminMiddleware],
+	registrationController.exportOtherCollegesOnlineExcel,
+)
+router.get(
+	'/export/other-colleges-offline',
+	[authMiddleware, adminMiddleware, superadminMiddleware],
+	registrationController.exportOtherCollegesOfflineExcel,
+)
+router.get(
 	'/:id',
 	[authMiddleware, adminMiddleware, param('id').isMongoId().withMessage('Invalid ID')],
 	validateRequest,
