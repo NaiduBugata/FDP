@@ -142,7 +142,7 @@ const exportExcel = async (req, res, next) => {
 			applyModeFilter(applyScopeFilter(await registrationService.getAll(), scope), mode),
 		)
 		const totalCount = registrations.length
-		const modeLabel = mode || 'All'
+		const modeLabel = mode === 'Online' ? 'Online' : mode === 'Offline' ? 'Offline' : 'All'
 		const workbook = new ExcelJS.Workbook()
 		const worksheet = workbook.addWorksheet('Registrations')
 
@@ -216,7 +216,6 @@ const exportExcel = async (req, res, next) => {
 		const fileBuffer = await workbook.xlsx.writeBuffer()
 
 		const datePart = new Date().toISOString().slice(0, 10)
-		const modeLabel = mode === 'Online' ? 'Online' : mode === 'Offline' ? 'Offline' : 'All'
 		const fileName = `QuBioDL-Registrations-${modeLabel}-${totalCount}-${datePart}.xlsx`
 
 		res.setHeader(
