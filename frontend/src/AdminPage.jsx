@@ -107,6 +107,8 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
   const [exportingMode, setExportingMode] = useState('')
   const [isExportingColleges, setIsExportingColleges] = useState(false)
   const [isExportingVfstrOnline, setIsExportingVfstrOnline] = useState(false)
+  const [isExportingVfstrOffline, setIsExportingVfstrOffline] = useState(false)
+  const [isExportingVfstrAll, setIsExportingVfstrAll] = useState(false)
   const [activeFormFieldIndex, setActiveFormFieldIndex] = useState(null)
 
   const registrationCounts = useMemo(() => {
@@ -128,6 +130,23 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     () => filterHostInstitutionRegistrations(registrations, 'Online').length,
     [registrations],
   )
+
+  const vfstrOfflineCount = useMemo(
+    () => filterHostInstitutionRegistrations(registrations, 'Offline').length,
+    [registrations],
+  )
+
+  const vfstrAllCount = useMemo(
+    () => filterHostInstitutionRegistrations(registrations, '').length,
+    [registrations],
+  )
+
+  const isAnyExporting =
+    isExportingRegistrations ||
+    isExportingColleges ||
+    isExportingVfstrOnline ||
+    isExportingVfstrOffline ||
+    isExportingVfstrAll
 
   const loadRegistrations = async () => {
     setIsRegistrationsLoading(true)
@@ -319,6 +338,84 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       setRegistrationsError(error.message || 'Failed to download VFSTR online file')
     } finally {
       setIsExportingVfstrOnline(false)
+    }
+  }
+
+  const downloadVfstrOfflineExcel = async () => {
+    setIsExportingVfstrOffline(true)
+    setRegistrationsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/vfstr-offline`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.message || 'Failed to download VFSTR offline file')
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('content-disposition') || ''
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
+      const fileName = match?.[1] || 'vfstr-offline.xlsx'
+
+      const fileUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(fileUrl)
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download VFSTR offline file')
+    } finally {
+      setIsExportingVfstrOffline(false)
+    }
+  }
+
+  const downloadVfstrAllExcel = async () => {
+    setIsExportingVfstrAll(true)
+    setRegistrationsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/registrations/export/vfstr-all`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload?.message || 'Failed to download VFSTR all file')
+      }
+
+      const blob = await response.blob()
+      const contentDisposition = response.headers.get('content-disposition') || ''
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
+      const fileName = match?.[1] || 'vfstr-all.xlsx'
+
+      const fileUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(fileUrl)
+    } catch (error) {
+      setRegistrationsError(error.message || 'Failed to download VFSTR all file')
+    } finally {
+      setIsExportingVfstrAll(false)
     }
   }
 
@@ -846,6 +943,10 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
             Colleges: <strong>{collegeCount}</strong>
             {' · '}
             VFSTR Online: <strong>{vfstrOnlineCount}</strong>
+            {' · '}
+            VFSTR Offline: <strong>{vfstrOfflineCount}</strong>
+            {' · '}
+            VFSTR All: <strong>{vfstrAllCount}</strong>
           </p>
           <div className="admin-row-actions">
             <button type="button" className="admin-add" onClick={openRegistrationsPanel}>
@@ -855,7 +956,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               type="button"
               className="admin-muted"
               onClick={() => downloadRegistrationsExcel('')}
-              disabled={isExportingRegistrations || isExportingColleges || isExportingVfstrOnline}
+              disabled={isAnyExporting}
             >
               {isExportingRegistrations && exportingMode === 'all'
                 ? 'Preparing Excel...'
@@ -865,7 +966,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               type="button"
               className="admin-muted"
               onClick={() => downloadRegistrationsExcel('Online')}
-              disabled={isExportingRegistrations || isExportingColleges || isExportingVfstrOnline}
+              disabled={isAnyExporting}
             >
               {isExportingRegistrations && exportingMode === 'Online'
                 ? 'Preparing Excel...'
@@ -875,7 +976,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               type="button"
               className="admin-muted"
               onClick={() => downloadRegistrationsExcel('Offline')}
-              disabled={isExportingRegistrations || isExportingColleges || isExportingVfstrOnline}
+              disabled={isAnyExporting}
             >
               {isExportingRegistrations && exportingMode === 'Offline'
                 ? 'Preparing Excel...'
@@ -885,7 +986,7 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               type="button"
               className="admin-muted"
               onClick={downloadCollegesExcel}
-              disabled={isExportingRegistrations || isExportingColleges || isExportingVfstrOnline}
+              disabled={isAnyExporting}
             >
               {isExportingColleges
                 ? 'Preparing Excel...'
@@ -895,11 +996,31 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
               type="button"
               className="admin-muted"
               onClick={downloadVfstrOnlineExcel}
-              disabled={isExportingRegistrations || isExportingColleges || isExportingVfstrOnline}
+              disabled={isAnyExporting}
             >
               {isExportingVfstrOnline
                 ? 'Preparing Excel...'
                 : `Download VFSTR Online (${vfstrOnlineCount})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadVfstrOfflineExcel}
+              disabled={isAnyExporting}
+            >
+              {isExportingVfstrOffline
+                ? 'Preparing Excel...'
+                : `Download VFSTR Offline (${vfstrOfflineCount})`}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={downloadVfstrAllExcel}
+              disabled={isAnyExporting}
+            >
+              {isExportingVfstrAll
+                ? 'Preparing Excel...'
+                : `Download VFSTR All (${vfstrAllCount})`}
             </button>
           </div>
           {registrationsError ? <p className="admin-error-text">{registrationsError}</p> : null}

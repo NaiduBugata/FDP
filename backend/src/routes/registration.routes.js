@@ -30,6 +30,16 @@ router.get(
 	registrationController.exportVfstrOnlineExcel,
 )
 router.get(
+	'/export/vfstr-offline',
+	[authMiddleware, adminMiddleware, superadminMiddleware],
+	registrationController.exportVfstrOfflineExcel,
+)
+router.get(
+	'/export/vfstr-all',
+	[authMiddleware, adminMiddleware, superadminMiddleware],
+	registrationController.exportVfstrAllExcel,
+)
+router.get(
 	'/:id',
 	[authMiddleware, adminMiddleware, param('id').isMongoId().withMessage('Invalid ID')],
 	validateRequest,

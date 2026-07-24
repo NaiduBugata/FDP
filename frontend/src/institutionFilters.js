@@ -88,7 +88,15 @@ export const filterHostInstitutionRegistrations = (registrations = [], mode = ''
     .toLowerCase()
 
   return registrations.filter((item) => {
-    if (!isHostInstitution(item?.institution)) {
+    const email = String(item?.emailId || item?.email || '')
+      .trim()
+      .toLowerCase()
+    const isVignanEmail =
+      email.endsWith('@vignan.ac.in') ||
+      email.endsWith('@vignanuniversity.in') ||
+      email.endsWith('@vignanuniversity.com')
+
+    if (!isHostInstitution(item?.institution) && !isVignanEmail) {
       return false
     }
     if (!normalizedMode) {
