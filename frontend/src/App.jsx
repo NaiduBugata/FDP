@@ -21,7 +21,10 @@ import whatsappQr from './assets/whatsapp-qr.png'
 
 const ADMIN_AUTH_STORAGE_KEY = 'qubiodl-admin-auth'
 const ADMIN_TOKEN_STORAGE_KEY = 'qubiodl-admin-token'
-const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v44'
+const SITE_CONTENT_CACHE_KEY = 'qubiodl-site-content-cache-v45'
+const REGISTRATIONS_CLOSED = true
+const REGISTRATIONS_CLOSED_MESSAGE = 'Registrations are closed.'
+const REGISTRATIONS_CLOSED_BUTTON_TEXT = 'Registrations closed'
 const REQUIRED_CONVENER_NAME = 'Dr. Sunil Babu Melingi'
 const WHATSAPP_GROUP_URL =
   'https://chat.whatsapp.com/C7OcNsQlZ5n8LMCNucKvkf?s=sw&p=a&ilr=0'
@@ -298,10 +301,10 @@ const DEFAULT_SECTION_CONTENT = {
     metaDate: '27th - 31st July 2026',
     metaMode: 'Hybrid Mode',
     metaSeats: 'Limited to 100 Seats',
-    registerButtonText: 'Register Now',
+    registerButtonText: REGISTRATIONS_CLOSED_BUTTON_TEXT,
     scheduleButtonText: 'View Schedule',
     daysLeftSuffix: 'left until seminar begins',
-    registrationNotice: 'Online registrations are closed. Offline registration is open.',
+    registrationNotice: REGISTRATIONS_CLOSED_MESSAGE,
   },
   about: {
     heading: 'About the Programme',
@@ -319,7 +322,7 @@ const DEFAULT_SECTION_CONTENT = {
       'Research & innovation skills',
       'Ethical awareness in AI healthcare',
     ],
-    ctaText: 'Register for the FDP',
+    ctaText: REGISTRATIONS_CLOSED_BUTTON_TEXT,
   },
   objectives: {
     heading: 'Seminar Objectives',
@@ -465,8 +468,8 @@ const DEFAULT_SECTION_CONTENT = {
     text: "Don't miss this opportunity to master the intersection of Quantum Computing and Biomedical AI. Secure your spot today.",
     feeLabel: 'REGISTRATION FEE',
     feeValue: 'FREE REGISTRATION',
-    registerButtonText: 'Register Now',
-    note: 'Online registrations are closed. Offline registration is open for eligible participants.',
+    registerButtonText: REGISTRATIONS_CLOSED_BUTTON_TEXT,
+    note: REGISTRATIONS_CLOSED_MESSAGE,
   },
   schedule: {
     heading: 'Program Schedule (27th - 31st July 2026)',
@@ -546,6 +549,7 @@ const normalizeSections = (sections) => {
           ? DEFAULT_SECTION_CONTENT.hero.daysLeftSuffix
           : source.hero.daysLeftSuffix,
       registrationNotice: DEFAULT_SECTION_CONTENT.hero.registrationNotice,
+      registerButtonText: DEFAULT_SECTION_CONTENT.hero.registerButtonText,
     },
     about: {
       ...DEFAULT_SECTION_CONTENT.about,
@@ -554,6 +558,7 @@ const normalizeSections = (sections) => {
         Array.isArray(source.about?.takeaways) && source.about.takeaways.length > 0
           ? source.about.takeaways
           : DEFAULT_SECTION_CONTENT.about.takeaways,
+      ctaText: DEFAULT_SECTION_CONTENT.about.ctaText,
     },
     objectives: {
       ...DEFAULT_SECTION_CONTENT.objectives,
@@ -638,6 +643,7 @@ const normalizeSections = (sections) => {
     cta: {
       ...DEFAULT_SECTION_CONTENT.cta,
       ...(source.cta ?? {}),
+      registerButtonText: DEFAULT_SECTION_CONTENT.cta.registerButtonText,
       note: DEFAULT_SECTION_CONTENT.cta.note,
     },
     schedule: {
@@ -1355,6 +1361,11 @@ function App() {
   const [registrationSubmitMessage, setRegistrationSubmitMessage] = useState('')
   const [registrationSubmitError, setRegistrationSubmitError] = useState('')
   const [registrationToastMessage, setRegistrationToastMessage] = useState('')
+  const [registrationToastTitle, setRegistrationToastTitle] = useState('Success')
+  const [siteJoinSettings, setSiteJoinSettings] = useState({
+    whatsappJoinLink: WHATSAPP_GROUP_URL,
+    whatsappJoinQr: '',
+  })
   const saveTimerRef = useRef(null)
 
   useEffect(() => {
@@ -1371,6 +1382,37 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, isAdminAuthenticated ? 'true' : 'false')
   }, [isAdminAuthenticated])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSiteJoinSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/site-settings`, {
+          cache: 'no-store',
+        })
+        if (!response.ok) {
+          return
+        }
+        const payload = await response.json()
+        const data = payload.data || {}
+        if (!isMounted) {
+          return
+        }
+        setSiteJoinSettings({
+          whatsappJoinLink: data.whatsappJoinLink || WHATSAPP_GROUP_URL,
+          whatsappJoinQr: data.whatsappJoinQr || '',
+        })
+      } catch {
+        // Keep defaults if settings API is unavailable.
+      }
+    }
+
+    loadSiteJoinSettings()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     if (adminToken) {
@@ -1545,6 +1587,12 @@ function App() {
 
   const openRegistrationForm = () => {
     setIsMenuOpen(false)
+    if (REGISTRATIONS_CLOSED) {
+      setIsRegisterOpen(false)
+      setRegistrationToastTitle('Notice')
+      setRegistrationToastMessage(REGISTRATIONS_CLOSED_MESSAGE)
+      return
+    }
     setRegistrationStep(1)
     setRegistrationSubmitError('')
     setRegistrationSubmitMessage('')
@@ -1581,6 +1629,13 @@ function App() {
 
   const handleFormSubmit = async (event) => {
     event.preventDefault()
+
+    if (REGISTRATIONS_CLOSED) {
+      setIsRegisterOpen(false)
+      setRegistrationToastTitle('Notice')
+      setRegistrationToastMessage(REGISTRATIONS_CLOSED_MESSAGE)
+      return
+    }
 
     setRegistrationSubmitError('')
     setRegistrationSubmitMessage('')
@@ -1619,6 +1674,7 @@ function App() {
       }
 
       setRegistrationSubmitMessage('Registration submitted successfully and saved to database.')
+      setRegistrationToastTitle('Success')
       setRegistrationToastMessage('Registration successful')
       setFormData({
         fullName: '',
@@ -2035,7 +2091,7 @@ function App() {
               </a>
             ))}
             <button type="button" className="btn btn-primary" onClick={openRegistrationForm}>
-              Register Now
+              {REGISTRATIONS_CLOSED_BUTTON_TEXT}
             </button>
           </nav>
         </div>
@@ -2544,13 +2600,17 @@ function App() {
                 </p>
                 <img
                   className="registration-whatsapp-qr"
-                  src={whatsappQr}
+                  src={siteJoinSettings.whatsappJoinQr || whatsappQr}
                   alt="QuBioDL WhatsApp group QR code"
                 />
                 <p className="registration-whatsapp-link-text">
                   Follow this link to join my WhatsApp group:{' '}
-                  <a href={WHATSAPP_GROUP_URL} target="_blank" rel="noreferrer">
-                    {WHATSAPP_GROUP_URL}
+                  <a
+                    href={siteJoinSettings.whatsappJoinLink || WHATSAPP_GROUP_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {siteJoinSettings.whatsappJoinLink || WHATSAPP_GROUP_URL}
                   </a>
                 </p>
                 <div className="registration-form-actions">
@@ -2592,12 +2652,21 @@ function App() {
       {registrationToastMessage ? (
         <div className="registration-toast-overlay" role="status" aria-live="polite">
           <div className="registration-toast-window">
-            <p className="registration-toast-title">Success</p>
+            <p
+              className={`registration-toast-title${
+                registrationToastTitle === 'Notice' ? ' is-notice' : ''
+              }`}
+            >
+              {registrationToastTitle}
+            </p>
             <p className="registration-toast-message">{registrationToastMessage}</p>
             <button
               type="button"
               className="btn btn-primary registration-toast-btn"
-              onClick={() => setRegistrationToastMessage('')}
+              onClick={() => {
+                setRegistrationToastMessage('')
+                setRegistrationToastTitle('Success')
+              }}
             >
               OK
             </button>

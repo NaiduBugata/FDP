@@ -111,6 +111,20 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
   const [isExportingVfstrAll, setIsExportingVfstrAll] = useState(false)
   const [isExportingOtherOnline, setIsExportingOtherOnline] = useState(false)
   const [isExportingOtherOffline, setIsExportingOtherOffline] = useState(false)
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false)
+  const [emailTestMessage, setEmailTestMessage] = useState('')
+  const [emailTestError, setEmailTestError] = useState('')
+  const [siteSettings, setSiteSettings] = useState({
+    whatsappJoinLink: '',
+    whatsappJoinQr: '',
+    meetingLink: '',
+    meetingId: '',
+    meetingPassword: '',
+  })
+  const [isLoadingSiteSettings, setIsLoadingSiteSettings] = useState(false)
+  const [isSavingSiteSettings, setIsSavingSiteSettings] = useState(false)
+  const [siteSettingsMessage, setSiteSettingsMessage] = useState('')
+  const [siteSettingsError, setSiteSettingsError] = useState('')
   const [activeFormFieldIndex, setActiveFormFieldIndex] = useState(null)
 
   const registrationCounts = useMemo(() => {
@@ -476,6 +490,136 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       setRegistrationsError(error.message || 'Failed to download other colleges offline file')
     } finally {
       setIsExportingOtherOffline(false)
+    }
+  }
+
+  const sendTestRegistrationEmail = async () => {
+    setIsSendingTestEmail(true)
+    setEmailTestMessage('')
+    setEmailTestError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/mail/test`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to send test emails')
+      }
+
+      setEmailTestMessage(payload.message || 'Test emails sent successfully.')
+    } catch (error) {
+      setEmailTestError(error.message || 'Failed to send test emails')
+    } finally {
+      setIsSendingTestEmail(false)
+    }
+  }
+
+  const loadSiteSettings = async () => {
+    setIsLoadingSiteSettings(true)
+    setSiteSettingsError('')
+    try {
+      const response = await fetch(`${apiBaseUrl}/site-settings`)
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to load site settings')
+      }
+      const data = payload.data || {}
+      setSiteSettings({
+        whatsappJoinLink: data.whatsappJoinLink || '',
+        whatsappJoinQr: data.whatsappJoinQr || '',
+        meetingLink: data.meetingLink || '',
+        meetingId: data.meetingId || '',
+        meetingPassword: data.meetingPassword || '',
+      })
+    } catch (error) {
+      setSiteSettingsError(error.message || 'Failed to load site settings')
+    } finally {
+      setIsLoadingSiteSettings(false)
+    }
+  }
+
+  useEffect(() => {
+    if (apiBaseUrl) {
+      loadSiteSettings()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBaseUrl])
+
+  const handleSiteSettingsChange = (key, value) => {
+    setSiteSettings((prev) => ({ ...prev, [key]: value }))
+    setSiteSettingsMessage('')
+    setSiteSettingsError('')
+  }
+
+  const handleWhatsappQrUpload = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      setSiteSettingsError('Please upload an image file for the WhatsApp QR code.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setSiteSettingsError('WhatsApp QR image must be under 2MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      handleSiteSettingsChange('whatsappJoinQr', String(reader.result || ''))
+    }
+    reader.onerror = () => {
+      setSiteSettingsError('Failed to read WhatsApp QR image.')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const saveSiteSettings = async () => {
+    setIsSavingSiteSettings(true)
+    setSiteSettingsMessage('')
+    setSiteSettingsError('')
+
+    try {
+      if (!adminToken) {
+        throw new Error('Admin API token missing. Login with backend admin credentials.')
+      }
+
+      const response = await fetch(`${apiBaseUrl}/site-settings`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(siteSettings),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.errors?.[0]?.msg || 'Failed to save settings')
+      }
+
+      const data = payload.data || {}
+      setSiteSettings({
+        whatsappJoinLink: data.whatsappJoinLink || '',
+        whatsappJoinQr: data.whatsappJoinQr || '',
+        meetingLink: data.meetingLink || '',
+        meetingId: data.meetingId || '',
+        meetingPassword: data.meetingPassword || '',
+      })
+      setSiteSettingsMessage('Settings saved successfully.')
+    } catch (error) {
+      setSiteSettingsError(error.message || 'Failed to save settings')
+    } finally {
+      setIsSavingSiteSettings(false)
     }
   }
 
@@ -1108,6 +1252,127 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
             </button>
           </div>
           {registrationsError ? <p className="admin-error-text">{registrationsError}</p> : null}
+        </section>
+
+        <section className="admin-card">
+          <h2>Email Notifications</h2>
+          <p className="admin-helper-text">
+            A premium registration confirmation email is sent automatically after each successful registration
+            via Resend (production-ready). Configure WhatsApp and meeting details below — they are used in
+            emails and the registration WhatsApp step.
+          </p>
+          <p className="admin-count-summary">
+            Provider: <strong>Resend</strong>
+            {' · '}
+            App: <strong>QuBioDL-2K26</strong>
+          </p>
+
+          <div className="admin-grid" style={{ marginTop: '1rem' }}>
+            <label>
+              WhatsApp Join Link
+              <input
+                type="url"
+                value={siteSettings.whatsappJoinLink}
+                onChange={(event) => handleSiteSettingsChange('whatsappJoinLink', event.target.value)}
+                placeholder="https://chat.whatsapp.com/..."
+                disabled={isLoadingSiteSettings || isSavingSiteSettings}
+              />
+            </label>
+            <label>
+              WhatsApp Join QR
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleWhatsappQrUpload}
+                disabled={isLoadingSiteSettings || isSavingSiteSettings}
+              />
+            </label>
+            <label>
+              Meeting Link
+              <input
+                type="url"
+                value={siteSettings.meetingLink}
+                onChange={(event) => handleSiteSettingsChange('meetingLink', event.target.value)}
+                placeholder="https://meet.google.com/..."
+                disabled={isLoadingSiteSettings || isSavingSiteSettings}
+              />
+            </label>
+            <label>
+              Meeting ID
+              <input
+                type="text"
+                value={siteSettings.meetingId}
+                onChange={(event) => handleSiteSettingsChange('meetingId', event.target.value)}
+                placeholder="Meeting ID"
+                disabled={isLoadingSiteSettings || isSavingSiteSettings}
+              />
+            </label>
+            <label>
+              Meeting Password
+              <input
+                type="text"
+                value={siteSettings.meetingPassword}
+                onChange={(event) => handleSiteSettingsChange('meetingPassword', event.target.value)}
+                placeholder="Meeting password"
+                disabled={isLoadingSiteSettings || isSavingSiteSettings}
+              />
+            </label>
+          </div>
+
+          {siteSettings.whatsappJoinQr ? (
+            <div style={{ marginTop: '0.85rem' }}>
+              <p className="admin-helper-text">Current WhatsApp QR preview</p>
+              <img
+                src={siteSettings.whatsappJoinQr}
+                alt="WhatsApp join QR preview"
+                style={{
+                  width: '160px',
+                  height: '160px',
+                  objectFit: 'contain',
+                  border: '1px solid #d5e2f0',
+                  borderRadius: '0.75rem',
+                  background: '#fff',
+                  padding: '0.4rem',
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div className="admin-row-actions" style={{ marginTop: '1rem' }}>
+            <button
+              type="button"
+              className="admin-add"
+              onClick={saveSiteSettings}
+              disabled={isLoadingSiteSettings || isSavingSiteSettings}
+            >
+              {isSavingSiteSettings ? 'Saving...' : 'Save Settings'}
+            </button>
+            <button
+              type="button"
+              className="admin-muted"
+              onClick={loadSiteSettings}
+              disabled={isLoadingSiteSettings || isSavingSiteSettings}
+            >
+              {isLoadingSiteSettings ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <button
+              type="button"
+              className="admin-add"
+              onClick={sendTestRegistrationEmail}
+              disabled={isSendingTestEmail}
+            >
+              {isSendingTestEmail ? 'Sending test emails...' : 'Send Test Email'}
+            </button>
+          </div>
+
+          <p className="admin-helper-text">
+            Test recipients: 231fa04739@vignan.ac.in, 231fa04510@vignan.ac.in, drmsb_cse@vignan.ac.in,
+            naidubugata88@gmail.com
+          </p>
+          {siteSettingsMessage ? <p className="admin-helper-text">{siteSettingsMessage}</p> : null}
+          {siteSettingsError ? <p className="admin-error-text">{siteSettingsError}</p> : null}
+          {emailTestMessage ? <p className="admin-helper-text">{emailTestMessage}</p> : null}
+          {emailTestError ? <p className="admin-error-text">{emailTestError}</p> : null}
         </section>
 
         <section className="admin-card">

@@ -1,11 +1,14 @@
 const { validationResult } = require('express-validator')
 const ExcelJS = require('exceljs')
 const registrationService = require('../services/registration.service')
+const mailService = require('../services/mail.service')
 const {
 	collectUniqueExternalColleges,
 	filterHostInstitutionRegistrations,
 	filterOtherCollegeRegistrations,
 } = require('../utils/institution.utils')
+
+const REGISTRATIONS_CLOSED = process.env.REGISTRATIONS_CLOSED !== 'false'
 
 const normalizeScope = (value = '') => {
 	const scope = String(value || '')
@@ -100,12 +103,28 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
+		if (REGISTRATIONS_CLOSED) {
+			return res.status(403).json({ message: 'Registrations are closed.' })
+		}
+
 		const errors = validationResult(req)
 		if (!errors.isEmpty()) {
 			return res.status(400).json({ errors: errors.array() })
 		}
 
 		const data = await registrationService.create(req.body)
+
+		Promise.resolve()
+			.then(() =>
+				mailService.sendRegistrationConfirmation({
+					to: data.emailId,
+					participantName: data.fullName || 'Participant',
+				}),
+			)
+			.catch((error) => {
+				console.error('Registration confirmation email failed:', error.message || error)
+			})
+
 		return res.status(201).json({ message: 'Registration created successfully', data })
 	} catch (error) {
 		return next(error)

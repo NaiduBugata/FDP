@@ -2030,6 +2030,10 @@
   font-family: var(--font-headline);
 }
 
+.registration-toast-title.is-notice {
+  color: #9a3412;
+}
+
 .registration-toast-message {
   margin: 0.4rem 0 0.9rem;
   color: #1d334d;
