@@ -216,9 +216,8 @@ const exportExcel = async (req, res, next) => {
 		const fileBuffer = await workbook.xlsx.writeBuffer()
 
 		const datePart = new Date().toISOString().slice(0, 10)
-		const scopePart = scope === 'all' ? 'all' : scope
-		const modePart = mode ? mode.toLowerCase() : 'all-modes'
-		const fileName = `new-registrations-${scopePart}-${modePart}-${totalCount}-${datePart}.xlsx`
+		const modeLabel = mode === 'Online' ? 'Online' : mode === 'Offline' ? 'Offline' : 'All'
+		const fileName = `QuBioDL-Registrations-${modeLabel}-${totalCount}-${datePart}.xlsx`
 
 		res.setHeader(
 			'Content-Type',
@@ -275,7 +274,7 @@ const exportCollegesExcel = async (req, res, next) => {
 
 		const fileBuffer = await workbook.xlsx.writeBuffer()
 		const datePart = new Date().toISOString().slice(0, 10)
-		const fileName = `unique-colleges-${totalCount}-${datePart}.xlsx`
+		const fileName = `QuBioDL-Unique-Colleges-${totalCount}-${datePart}.xlsx`
 
 		res.setHeader(
 			'Content-Type',
@@ -297,7 +296,7 @@ const exportVfstrOnlineExcel = async (req, res, next) => {
 			registrations,
 			sheetName: 'VFSTR Online',
 			summaryLabel: 'VFSTR / Vignan Online Participants',
-			filePrefix: 'vfstr-online',
+			filePrefix: 'QuBioDL-VFSTR-Online',
 		})
 	} catch (error) {
 		return next(error)
@@ -313,7 +312,7 @@ const exportVfstrOfflineExcel = async (req, res, next) => {
 			registrations,
 			sheetName: 'VFSTR Offline',
 			summaryLabel: 'VFSTR / Vignan Offline Participants',
-			filePrefix: 'vfstr-offline',
+			filePrefix: 'QuBioDL-VFSTR-Offline',
 		})
 	} catch (error) {
 		return next(error)
@@ -329,7 +328,7 @@ const exportVfstrAllExcel = async (req, res, next) => {
 			registrations,
 			sheetName: 'VFSTR All',
 			summaryLabel: 'VFSTR / Vignan All Participants (Online + Offline)',
-			filePrefix: 'vfstr-all',
+			filePrefix: 'QuBioDL-VFSTR-All',
 		})
 	} catch (error) {
 		return next(error)

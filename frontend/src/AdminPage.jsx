@@ -218,6 +218,24 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
     setIsRegistrationsOpen(false)
   }
 
+  const resolveDownloadFileName = (response, fallbackName) => {
+    const contentDisposition = response.headers.get('content-disposition') || ''
+    const match = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)"?/i)
+    const headerName = match?.[1] ? decodeURIComponent(match[1].replace(/['"]/g, '')) : ''
+    return headerName || fallbackName
+  }
+
+  const triggerBlobDownload = (blob, fileName) => {
+    const fileUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = fileUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(fileUrl)
+  }
+
   const downloadRegistrationsExcel = async (mode = '') => {
     setIsExportingRegistrations(true)
     setExportingMode(mode || 'all')
@@ -243,18 +261,10 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       }
 
       const blob = await response.blob()
-      const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-      const fileName = match?.[1] || 'registrations.xlsx'
-
-      const fileUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(fileUrl)
+      const datePart = new Date().toISOString().slice(0, 10)
+      const modeLabel = mode === 'Online' ? 'Online' : mode === 'Offline' ? 'Offline' : 'All'
+      const fallbackName = `QuBioDL-Registrations-${modeLabel}-${datePart}.xlsx`
+      triggerBlobDownload(blob, resolveDownloadFileName(response, fallbackName))
     } catch (error) {
       setRegistrationsError(error.message || 'Failed to download registrations file')
     } finally {
@@ -283,18 +293,11 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       }
 
       const blob = await response.blob()
-      const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-      const fileName = match?.[1] || 'unique-colleges.xlsx'
-
-      const fileUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(fileUrl)
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-Unique-Colleges-${datePart}.xlsx`),
+      )
     } catch (error) {
       setRegistrationsError(error.message || 'Failed to download colleges file')
     } finally {
@@ -322,18 +325,11 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       }
 
       const blob = await response.blob()
-      const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-      const fileName = match?.[1] || 'vfstr-online.xlsx'
-
-      const fileUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(fileUrl)
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-VFSTR-Online-${datePart}.xlsx`),
+      )
     } catch (error) {
       setRegistrationsError(error.message || 'Failed to download VFSTR online file')
     } finally {
@@ -361,18 +357,11 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       }
 
       const blob = await response.blob()
-      const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-      const fileName = match?.[1] || 'vfstr-offline.xlsx'
-
-      const fileUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(fileUrl)
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-VFSTR-Offline-${datePart}.xlsx`),
+      )
     } catch (error) {
       setRegistrationsError(error.message || 'Failed to download VFSTR offline file')
     } finally {
@@ -400,18 +389,11 @@ function AdminPage({ content, onContentChange, onLogout, apiBaseUrl, adminToken 
       }
 
       const blob = await response.blob()
-      const contentDisposition = response.headers.get('content-disposition') || ''
-      const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-      const fileName = match?.[1] || 'vfstr-all.xlsx'
-
-      const fileUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(fileUrl)
+      const datePart = new Date().toISOString().slice(0, 10)
+      triggerBlobDownload(
+        blob,
+        resolveDownloadFileName(response, `QuBioDL-VFSTR-All-${datePart}.xlsx`),
+      )
     } catch (error) {
       setRegistrationsError(error.message || 'Failed to download VFSTR all file')
     } finally {

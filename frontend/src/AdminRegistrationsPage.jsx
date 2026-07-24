@@ -40,8 +40,11 @@ const downloadExcel = async ({ apiBaseUrl, adminToken, scope, mode, onError }) =
 
     const blob = await response.blob()
     const contentDisposition = response.headers.get('content-disposition') || ''
-    const match = contentDisposition.match(/filename="?([^"]+)"?/i)
-    const fileName = match?.[1] || 'registrations.xlsx'
+    const match = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)"?/i)
+    const headerName = match?.[1] ? decodeURIComponent(match[1].replace(/['"]/g, '')) : ''
+    const datePart = new Date().toISOString().slice(0, 10)
+    const modeLabel = mode === 'Online' ? 'Online' : mode === 'Offline' ? 'Offline' : 'All'
+    const fileName = headerName || `QuBioDL-Registrations-${modeLabel}-${datePart}.xlsx`
 
     const fileUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
